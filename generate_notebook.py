@@ -1,5 +1,3 @@
-
-
 #%%[markdown]
 ## Carregar base de dados para o SQLite
 #Definir localização da base de dados 
@@ -147,7 +145,8 @@ word_typed_in_query___query_elo7(path_to_sqlite)
 ### Análises das palavras dígitadas nas consultas
 ###### Para estas análises foram retiradas as palavras conhecidas em *PLN* (processamento de linguagem natural) como *stopwords*, *stopwords* são palavras muito comuns que não adicionam significado para o texto (preposições por exemplo)
 #Contagem do número de palavras distintas que já foram digitadas por
-#usuarios em consultadas, admitindo que nos modelos que vão ser desenvolvidos as palavras vão ser as variáveis de entrada, estas são as variáveis que primeiro vão ser análisadas.
+#usuarios em consultadas, admitindo que nos modelos que vão ser desenvolvidos as
+#palavras vão ser as variáveis de entrada, estas são as variáveis que primeiro vão ser análisadas.
 #%%
 conn=sqlite3.connect(path_to_sqlite)
 sql="""SELECT COUNT(DISTINCT word)        
@@ -155,7 +154,7 @@ sql="""SELECT COUNT(DISTINCT word)
         WHERE word NOT IN ({stopwords})
     """.format(stopwords=str(list(stopwords.words('portuguese')))[1:-1])
 print("Número de palavras distintas já digitadas: "+str(conn.execute(sql).fetchall()[0][0]))
-
+conn.close()
 
 #%%[markdown]
 # Por causa da quantidade de palavras que existem é preciso realizar
@@ -217,7 +216,8 @@ sns.lineplot(data=df_number_of_times_for_words_in_querys.reset_index(), x="ranki
 # utilizado o termo *cobertura* neste relatorio tem a seguinte
 # definição: "Um grupo de palavras cobre um consulta se e somente se existe 
 # pelo menos uma palavra do grupo que é esta dentro da consulta".<br>
-# A seguir um plot que mostra quantas consultas são cobertas por grupos com as N palavras mais frequentes.
+# A seguir um plot que mostra quantas consultas são cobertas por grupos com 
+# as N palavras mais frequentes.
 
 #%%
 def words_are_in_query(listOfWordsToSearch, query_string):
@@ -252,4 +252,102 @@ print ("Quantidade consultas cobertas pelo grupo com as {num_of_words} palavras 
 # Observando o gráfico anterior observa-se que as 384 das palavras mais frequentes
 # estão em 35591 das 38507 consultas que estão disponiveis na base dados fornecida,
 # aproximadamente 92% de cobertura. Deste modo os modelos de IA desenvolvidos caso 
-# recebam uma consulta/query como uma de suas entradas vão analisa apenas estas 384 palavras.
+# recebam uma consulta/query como uma de suas entradas vão analisa apenas estas 384 
+# palavras.
+
+
+
+
+
+
+
+
+# %%[markdown]
+### Análises dos atributos dos produtos existentes (peso, preço e entrega rápida).
+
+
+
+#### A seguir histogramas para diferentes faixas  peso que os produtos possuem em cada categoria.
+# %%[markdown]
+# Histogramas com a distribuição de peso por categoria.
+#%%
+conn=sqlite3.connect(path_to_sqlite)
+
+df=pd.read_sql_query("""SELECT DISTINCT product_id, category, weight FROM query_elo7 WHERE weight""",conn)
+sns.histplot(hue="category", x="weight", data=df,bins=10)
+conn.close()
+# %%
+# %%[markdown]
+# Histogramas com a distribuição de peso por categoria com limite de peso de até 40, isso é equivalente a um zoom no inicio no eixo X dos histogramas do gráfico anterior.
+#%%
+conn=sqlite3.connect(path_to_sqlite)
+
+df=pd.read_sql_query("""SELECT DISTINCT product_id, category, weight FROM query_elo7 WHERE weight<40""",conn)
+#ax = sns.boxplot(x="category", y="weight", data=df)
+sns.histplot(hue="category", x="weight", data=df,bins=10)
+conn.close()
+
+
+# %%[markdown]
+#### A seguir histogramas para diferentes faixas preço que os produtos possuem em cada categoria.
+# %%[markdown]
+# Histogramas com a distribuição de preço por categoria.
+#%%
+conn=sqlite3.connect(path_to_sqlite)
+
+df=pd.read_sql_query("""SELECT DISTINCT product_id, category, price FROM query_elo7 WHERE price""",conn)
+sns.histplot(hue="category", x="price", data=df,bins=10)
+conn.close()
+
+# %%[markdown]
+# Histogramas com a distribuição de peso por categoria com limite de preço de até 100, isso é equivalente a um zoom no inicio do eixo X dos histogramas do gráfico anterior.
+#%%
+conn=sqlite3.connect(path_to_sqlite)
+
+df=pd.read_sql_query("""SELECT DISTINCT product_id, category, price FROM query_elo7 WHERE price<200  """,conn)
+#ax = sns.boxplot(x="category", y="weight", data=df)
+sns.histplot(hue="category", x="price", data=df,bins=10)
+conn.close()
+
+
+# %%[markdown]
+# Nos histogramas do gráfico anterior a categoria "Lembrancinhas" esta atrapalhando 
+# a visualizaçao das distribuição de preços das outras categorias, ela vai ser retirada
+# do próximo gráfico então. O gráifco a seguir é um replot dos histogramas do gráfico 
+# antorior porem sem a categoria "Lembrancinhas".
+
+#%%
+conn=sqlite3.connect(path_to_sqlite)
+
+df=pd.read_sql_query("""SELECT DISTINCT product_id, category, price FROM query_elo7 WHERE  price<200 AND category!='Lembrancinhas'  """,conn)
+#ax = sns.boxplot(x="category", y="weight", data=df)
+sns.histplot(hue="category", x="price", data=df,bins=10)
+conn.close()
+
+
+# %%[markdown]
+#### Análise sobre a distribuição de peso e preço 
+# Como pode ser observado nem o preço nem o peso  dos produtos segue uma distribuição 
+# normal portanto, a melhor estrategia para discretizar estes valores seria clusteriza-los,
+# via algum algoritmo de aprendizado de aprendizado não supervisionado como o K-means.
+# A discretização de valores continuos é uma estrategia que pode melhorar qualidade dos
+# modelos de IA desenvolvidos.
+
+# %%[markdown]
+#### Análise sobre a distribuição do atributo envio expresso
+
+#%%
+
+df=pd.read_csv(path_to_database)
+df['express_delivery']=df['express_delivery'].apply(lambda x: 'yes' if x>0.0 else 'no')
+categories=df['category'].unique()
+for category in categories:
+    print("Distribuição para a categoria:"+str(category)+"\n")
+    dfT=df[df['category']==category]
+    sns.histplot( x="express_delivery", data=dfT.sort_values(by=['express_delivery']), stat='probability',discrete=True, shrink=.8)
+    plt.show()
+    print("\n\n\n\n")
+
+
+
+# %%
