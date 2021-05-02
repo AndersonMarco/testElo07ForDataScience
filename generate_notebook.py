@@ -217,8 +217,7 @@ sns.lineplot(data=df_number_of_times_for_words_in_querys.reset_index(), x="ranki
 # utilizado o termo *cobertura* neste relatorio tem a seguinte
 # definição: "Um grupo de palavras cobre um consulta se e somente se existe 
 # pelo menos uma palavra do grupo que é esta dentro da consulta".<br>
-# A seguir um plot que mostra quantas consultas são cobertas por grupos <br>
-# com as N palavras mais frequentes.
+# A seguir um plot que mostra quantas consultas são cobertas por grupos com as N palavras mais frequentes.
 
 #%%
 def words_are_in_query(listOfWordsToSearch, query_string):
