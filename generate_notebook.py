@@ -338,7 +338,10 @@ conn.close()
 
 #%%
 
-df=pd.read_csv(path_to_database)
+conn=sqlite3.connect(path_to_sqlite)
+df=pd.read_sql_query("""SELECT DISTINCT product_id, category, express_delivery FROM query_elo7 WHERE  price<200 AND category!='Lembrancinhas'  """,conn)
+
+
 df['express_delivery']=df['express_delivery'].apply(lambda x: 'yes' if x>0.0 else 'no')
 categories=df['category'].unique()
 for category in categories:
@@ -349,5 +352,5 @@ for category in categories:
     print("\n\n\n\n")
 
 
-
+conn.close()
 # %%
