@@ -1,7 +1,7 @@
 
 
 #%%[markdown]
-## Carregar base de dados para o SQLite**
+## Carregar base de dados para o SQLite
 #Definir localização da base de dados 
 #%%
 path_to_database='data/raw/elo7_recruitment_dataset.csv'
@@ -58,17 +58,17 @@ def create_schema_for_tables_that_associate_words_in_querys_with_querys_typed(pa
     conn.commit()
     conn.close()
 
-def create_schema_for_table___word_typed_in_query___word_typed_in_query(path_to_sqlite3):
+def create_schema_for_table___word_typed_in_query___query_elo7(path_to_sqlite3):
     conn = sqlite3.connect(path_to_sqlite3)
     cur=conn.cursor()
-    cur.execute("DROP TABLE IF EXISTS word_typed_in_query___word_typed_in_query;")
+    cur.execute("DROP TABLE IF EXISTS word_typed_in_query___query_elo7;")
     cur.execute("""
-    CREATE TABLE word_typed_in_query___word_typed_in_query (
+    CREATE TABLE word_typed_in_query___query_elo7 (
         word_typed_in_query_id                       INTEGER REFERENCES word_typed_in_query (word_typed_in_query_id) ON DELETE CASCADE
                                                                                                                  ON UPDATE CASCADE,
         querys_elo7_id                               INTEGER REFERENCES query_elo7 (querys_elo7_id) ON DELETE CASCADE
                                                                                                 ON UPDATE CASCADE,
-        word_typed_in_query___word_typed_in_query_id INTEGER PRIMARY KEY AUTOINCREMENT
+        word_typed_in_query___query_elo7_id INTEGER PRIMARY KEY AUTOINCREMENT
     );
 
     """)
@@ -101,7 +101,7 @@ def populate_table__word_typed_in_query(path_to_sqlite3):
     conn.commit()
     conn.close()
 
-def word_typed_in_query___word_typed_in_query(path_to_sqlite3):
+def word_typed_in_query___query_elo7(path_to_sqlite3):
     conn = sqlite3.connect(path_to_sqlite3)
     cur=conn.cursor()
     converter_word_to_word_id_in_table={}
@@ -123,7 +123,7 @@ def word_typed_in_query___word_typed_in_query(path_to_sqlite3):
         for word in query_words:
             word_id=converter_word_to_word_id_in_table[word]
             sql='''
-            INSERT INTO word_typed_in_query___word_typed_in_query (
+            INSERT INTO word_typed_in_query___query_elo7 (
                                                           word_typed_in_query_id,
                                                           querys_elo7_id
                                                       )
@@ -137,10 +137,10 @@ def word_typed_in_query___word_typed_in_query(path_to_sqlite3):
     conn.close()
 
 
-#####create_schema_for_tables_that_associate_words_in_querys_with_querys_typed(path_to_sqlite)
-#####populate_table__word_typed_in_query(path_to_sqlite)
-#####create_schema_for_table___word_typed_in_query___word_typed_in_query(path_to_sqlite)
-#####word_typed_in_query___word_typed_in_query(path_to_sqlite)
+create_schema_for_tables_that_associate_words_in_querys_with_querys_typed(path_to_sqlite)
+populate_table__word_typed_in_query(path_to_sqlite)
+create_schema_for_table___word_typed_in_query___query_elo7(path_to_sqlite)
+word_typed_in_query___query_elo7(path_to_sqlite)
 
 #%%[markdown]
 ## Análise exploratoria
@@ -170,16 +170,16 @@ def count_number_of_times_that_word_appear_in_query(path_to_sqlite3):
     
 
     sql="""
-    WITH word_typed_in_query___word_typed_in_query_distinct AS (
+    WITH word_typed_in_query___query_elo7_distinct AS (
         SELECT DISTINCT word_typed_in_query_id, querys_elo7_id 
-        FROM  word_typed_in_query___word_typed_in_query
+        FROM  word_typed_in_query___query_elo7
     )
     SELECT COUNT(querys_elo7_id) AS numbero_de_consultas_onde_a_palavra_foi_digitada,
            word_typed_in_query.word AS palavra
-    FROM word_typed_in_query___word_typed_in_query_distinct
-    INNER JOIN word_typed_in_query ON word_typed_in_query.word_typed_in_query_id=word_typed_in_query___word_typed_in_query_distinct.word_typed_in_query_id
+    FROM word_typed_in_query___query_elo7_distinct
+    INNER JOIN word_typed_in_query ON word_typed_in_query.word_typed_in_query_id=word_typed_in_query___query_elo7_distinct.word_typed_in_query_id
     WHERE  word_typed_in_query.word NOT IN ({stopwords})
-    GROUP BY word_typed_in_query___word_typed_in_query_distinct.word_typed_in_query_id
+    GROUP BY word_typed_in_query___query_elo7_distinct.word_typed_in_query_id
     ORDER BY COUNT(querys_elo7_id) DESC
     """.format(stopwords=str(list(stopwords.words('portuguese')))[1:-1])
     
@@ -205,7 +205,7 @@ df_number_of_times_for_words_in_querys=df_number_of_times_for_words_in_querys.re
 df_number_of_times_for_words_in_querys.rename(columns = {'index':'ranking da palavra', 'numbero_de_consultas_onde_a_palavra_foi_digitada':'número de vezes que aparece'}, inplace = True)
 sns.lineplot(data=df_number_of_times_for_words_in_querys.reset_index(), x="ranking da palavra", y="número de vezes que aparece")
 
-# %%
+# %% [markdown]
 # Com as análises apresentadas até agora pode-se dizer que com poucas
 # palavras, algumas centenas, esta dentro da maioria das consultas 
 # (querys). Para confirmar isso
@@ -249,9 +249,8 @@ print ("Quantidade consultas cobertas pelo grupo com as {num_of_words} palavras 
 
 
 
-# %%
+# %%[markdown]
 # Observando o gráfico anterior observa-se que as 384 das palavras mais frequentes
 # estão em 35591 das 38507 consultas que estão disponiveis na base dados fornecida,
 # aproximadamente 92% de cobertura. Deste modo os modelos de IA desenvolvidos caso 
 # recebam uma consulta/query como uma de suas entradas vão analisa apenas estas 384 palavras.
-
