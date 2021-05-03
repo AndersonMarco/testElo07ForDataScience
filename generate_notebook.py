@@ -4,9 +4,10 @@
 #%%
 path_to_database='data/raw/elo7_recruitment_dataset.csv'
 #%%[markdown]
-#Definir localização onde SQLite vai ser guardado
+#Definir localização onde SQLite vai ser guardado, é recomendavel usar uma partição
+#mapeada em RAM para aumentar a performance (exemplo /dev/shm)
 #%%
-path_to_sqlite='data/interim/database.sqlite3'
+path_to_sqlite='data/interim/database.sqlite3' #Store the database in ram partition (as /dev/shm) to increase the performance
 
 
 #%%[markdown]
@@ -72,6 +73,27 @@ def create_schema_for_table___word_typed_in_query___query_elo7(path_to_sqlite3):
     """)
     conn.commit()
     conn.close()
+
+
+def create_schema_for_table___vector_element(path_to_sqlite3):
+    conn = sqlite3.connect(path_to_sqlite3)
+    cur=conn.cursor()
+    cur.execute("DROP TABLE IF EXISTS vector_element;")
+    sql="""
+    CREATE TABLE vector_element (
+    vector_element_id  INTEGER       PRIMARY KEY AUTOINCREMENT,
+    querys_elo7_id     INTEGER       REFERENCES query_elo7 (querys_elo7_id) ON DELETE CASCADE
+                                                                            ON UPDATE CASCADE,
+    position_in_vector INT,
+    word               VARCHAR (256),
+    value              DOUBLE
+    );
+    """
+    cur.execute(sql)
+    conn.commit()
+    conn.close()
+
+
 
 def populate_table__word_typed_in_query(path_to_sqlite3):
     conn = sqlite3.connect(path_to_sqlite3)
@@ -139,6 +161,8 @@ create_schema_for_tables_that_associate_words_in_querys_with_querys_typed(path_t
 populate_table__word_typed_in_query(path_to_sqlite)
 create_schema_for_table___word_typed_in_query___query_elo7(path_to_sqlite)
 word_typed_in_query___query_elo7(path_to_sqlite)
+create_schema_for_table___vector_element(path_to_sqlite)
+
 
 #%%[markdown]
 ## Análise exploratoria
@@ -239,12 +263,12 @@ def number_of_queries_coverage_by_groups_with_the_N_most_frequent_words(path_to_
 
     return pd.DataFrame.from_dict(prototype_for_dataframe_with_result)
 
-df_with_number_of_queries_coverage_by_groups_with_the_N_most_frequent_words=number_of_queries_coverage_by_groups_with_the_N_most_frequent_words(path_to_sqlite,path_to_database)
-sns.lineplot(data=df_with_number_of_queries_coverage_by_groups_with_the_N_most_frequent_words, x="grupo com as N palavras mais frequentes", y="número de consultas cobertas pelo grupo")
+####df_with_number_of_queries_coverage_by_groups_with_the_N_most_frequent_words=number_of_queries_coverage_by_groups_with_the_N_most_frequent_words(path_to_sqlite,path_to_database)
+####sns.lineplot(data=df_with_number_of_queries_coverage_by_groups_with_the_N_most_frequent_words, x="grupo com as N palavras mais frequentes", y="número de consultas cobertas pelo grupo")
 
 # %%
-last_row_for_infomation_about_group_of_words=(df_with_number_of_queries_coverage_by_groups_with_the_N_most_frequent_words.values)[-1]
-print ("Quantidade consultas cobertas pelo grupo com as {num_of_words} palavras mais frequentes: {num_of_querys}".format(num_of_words=last_row_for_infomation_about_group_of_words[0],num_of_querys=last_row_for_infomation_about_group_of_words[1]))
+####last_row_for_infomation_about_group_of_words=(df_with_number_of_queries_coverage_by_groups_with_the_N_most_frequent_words.values)[-1]
+####print ("Quantidade consultas cobertas pelo grupo com as {num_of_words} palavras mais frequentes: {num_of_querys}".format(num_of_words=last_row_for_infomation_about_group_of_words[0],num_of_querys=last_row_for_infomation_about_group_of_words[1]))
 
 
 
@@ -256,7 +280,55 @@ print ("Quantidade consultas cobertas pelo grupo com as {num_of_words} palavras 
 # palavras.
 
 
+# %%[markdown]
+### Criação de vetor médio de palavras consultadas para cada categoria .
+# Para fazer isso são necessarios serem realizados os seguintes passos:
+###################################444444444
+# Com base nas 384 palavras mais frequentes associamos cada palavra a uma posição 
+# em um vetor de 384 elementos e cada vez que esta palavra aparece na busca
+# por um produto o valor desse v
 
+
+#%%
+def populate_table____vector_element(path_to_sqlite3):
+    ranking_for_occurrence_words_in_querys=list((count_number_of_times_that_word_appear_in_query(path_to_sqlite3)['palavra']).values)[:384]
+    ranking_for_occurrence_words_in_querys.sort()
+    conn = sqlite3.connect(path_to_sqlite3)
+    cur=conn.cursor()
+    cur2=conn.cursor()
+    cur.execute("SELECT querys_elo7_id,query FROM query_elo7")
+    for line in cur:
+        query_words= word_tokenize(line[1])
+        elementsToInsert=""
+        for i in range(len(ranking_for_occurrence_words_in_querys)):
+            number_of_times=query_words.count(ranking_for_occurrence_words_in_querys[i])
+            elementsToInsert=elementsToInsert+"({querys_elo7_id},{position_in_vector},'{word}',{number_of_times}),".format(querys_elo7_id=line[0],position_in_vector=i,word=ranking_for_occurrence_words_in_querys[i],number_of_times=number_of_times)
+        
+        cur2.execute("INSERT INTO vector_element (querys_elo7_id,position_in_vector,word,value) VALUES "+elementsToInsert[:-1])
+        conn.commit()
+    conn.close()
+
+populate_table(path_to_sqlite)
+"""
+WITH TEMP3 AS (
+SELECT query_elo7.product_id AS product_id,    
+       position_in_vector AS position_in_vector,
+       word AS word,
+       category,
+       SUM(value) AS CC
+  FROM vector_element
+  INNER JOIN query_elo7 ON query_elo7.querys_elo7_id=vector_element.querys_elo7_id
+
+  GROUP BY query_elo7.product_id,position_in_vector,word,category
+)
+
+
+SELECT category,AVG(CC)
+FROM TEMP3
+GROUP BY category
+ORDER BY category,position_in_vector
+"""
+exit(0)
 
 
 
@@ -353,4 +425,10 @@ for category in categories:
 
 
 conn.close()
-# %%
+# %%[markdown]
+# Como pode ser observado existem diferentes distribuições de envio expresso
+# por categoria, isso faz este atributo interessante para usar em um 
+# classificador de categorias.
+
+
+# %%[markdown]
