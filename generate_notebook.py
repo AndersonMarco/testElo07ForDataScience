@@ -282,11 +282,22 @@ def number_of_queries_coverage_by_groups_with_the_N_most_frequent_words(path_to_
 
 # %%[markdown]
 ### Criação de vetor médio de palavras consultadas para cada categoria .
-# Para fazer isso são necessarios serem realizados os seguintes passos:
-###################################444444444
-# Com base nas 384 palavras mais frequentes associamos cada palavra a uma posição 
-# em um vetor de 384 elementos e cada vez que esta palavra aparece na busca
-# por um produto o valor desse v
+# Para fazer isso devem ser calculados histogramas das palavras que cada produto
+# da base de dados possui com base nas consultas associadas ao produto para então, calcular a média
+# dos histogramas dos produtos associados a uma categoria.
+# Os histogramas podem ser feitos seguindo os seguintes passos: <br>
+# <ul>
+# <li> 
+#   Com base nas 384 palavras mais frequentes associamos cada palavra a uma posição 
+#   vetores de 384 elementos onde, cada produto que esta base de dados vai ter um vetor destes. 
+#   Estes são os vetores que guardam o histograma dos produtos.
+# </li>
+# <li>
+#    Percorrer todas as consultas que existem para cada um dos produtos cadastrados na
+#    base de dados e sempre que achar uma palavra que associada ao vetor de histograma do produto
+#    incrementar o valor do elemento do vetor associado a palavra.
+# </li>
+#</ul>
 
 
 #%%
@@ -308,7 +319,7 @@ def populate_table____vector_element(path_to_sqlite3):
         conn.commit()
     conn.close()
 
-populate_table(path_to_sqlite)
+populate_table____vector_element(path_to_sqlite)
 """
 WITH TEMP3 AS (
 SELECT query_elo7.product_id AS product_id,    
