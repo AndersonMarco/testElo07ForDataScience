@@ -24,6 +24,7 @@ import nltk
 import numpy as np
 from nltk import word_tokenize
 from nltk.corpus import stopwords
+
 nltk.download('punkt')
 nltk.download('stopwords')
 #%%
@@ -34,9 +35,9 @@ def pass_csv_database_to_sqlite3(path_to_sqlite3,path_raw_data_in_csv):
     df.to_sql("query_elo7", conn, if_exists="replace",index_label='querys_elo7_id')
     conn.close()
 
-pass_csv_database_to_sqlite3(path_to_sqlite,path_to_database)
+#######pass_csv_database_to_sqlite3(path_to_sqlite,path_to_database)
 
-#####load_dataset.create_sqlite_schema()
+#######load_dataset.create_sqlite_schema()
 
 #%%[markdown]
 #Associar individualmente cada palavras digitadas nas consultas com as 
@@ -48,6 +49,7 @@ def create_schema_for_tables_that_associate_words_in_querys_with_querys_typed(pa
     conn = sqlite3.connect(path_to_sqlite3)
     cur=conn.cursor()
     cur.execute("DROP TABLE IF EXISTS word_typed_in_query;")
+    cur.execute("VACUUM;")
     cur.execute("""
     CREATE TABLE word_typed_in_query (
         word                   VARCHAR (256),
@@ -61,6 +63,7 @@ def create_schema_for_table___word_typed_in_query___query_elo7(path_to_sqlite3):
     conn = sqlite3.connect(path_to_sqlite3)
     cur=conn.cursor()
     cur.execute("DROP TABLE IF EXISTS word_typed_in_query___query_elo7;")
+    cur.execute("VACUUM;")
     cur.execute("""
     CREATE TABLE word_typed_in_query___query_elo7 (
         word_typed_in_query_id                       INTEGER REFERENCES word_typed_in_query (word_typed_in_query_id) ON DELETE CASCADE
@@ -79,6 +82,7 @@ def create_schema_for_table___vector_element(path_to_sqlite3):
     conn = sqlite3.connect(path_to_sqlite3)
     cur=conn.cursor()
     cur.execute("DROP TABLE IF EXISTS vector_element;")
+    cur.execute("VACUUM;")
     sql="""
     CREATE TABLE vector_element (
     vector_element_id  INTEGER       PRIMARY KEY AUTOINCREMENT,
@@ -90,6 +94,12 @@ def create_schema_for_table___vector_element(path_to_sqlite3):
     );
     """
     cur.execute(sql)
+    cur.execute("""
+    CREATE INDEX vector_element___querys_elo7_id ON vector_element (
+        querys_elo7_id
+    );
+
+    """)
     conn.commit()
     conn.close()
 
@@ -157,11 +167,11 @@ def word_typed_in_query___query_elo7(path_to_sqlite3):
     conn.close()
 
 
-create_schema_for_tables_that_associate_words_in_querys_with_querys_typed(path_to_sqlite)
-populate_table__word_typed_in_query(path_to_sqlite)
-create_schema_for_table___word_typed_in_query___query_elo7(path_to_sqlite)
-word_typed_in_query___query_elo7(path_to_sqlite)
-create_schema_for_table___vector_element(path_to_sqlite)
+##########create_schema_for_tables_that_associate_words_in_querys_with_querys_typed(path_to_sqlite)
+##########populate_table__word_typed_in_query(path_to_sqlite)
+##########create_schema_for_table___word_typed_in_query___query_elo7(path_to_sqlite)
+##########word_typed_in_query___query_elo7(path_to_sqlite)
+##########create_schema_for_table___vector_element(path_to_sqlite)
 
 
 #%%[markdown]
@@ -211,9 +221,9 @@ def count_number_of_times_that_word_appear_in_query(path_to_sqlite3):
 
     conn.close()
     return df
-print("Análise de frequência das vinte palavras mais digitadas nas consultas:")
-df_number_of_times_for_words_in_querys=count_number_of_times_that_word_appear_in_query(path_to_sqlite)
-df_number_of_times_for_words_in_querys.head(20)
+#############print("Análise de frequência das vinte palavras mais digitadas nas consultas:")
+#############df_number_of_times_for_words_in_querys=count_number_of_times_that_word_appear_in_query(path_to_sqlite)
+#############df_number_of_times_for_words_in_querys.head(20)
 # %%[markdown]
 # Pode-se notar um decaimento exponencial (muito rápido) na 
 # frequencia da palavra mais digitada para vigesima mais digitada. <br>
@@ -223,10 +233,10 @@ df_number_of_times_for_words_in_querys.head(20)
 # vezes que ela aparece.
 
 # %%
-df_number_of_times_for_words_in_querys=count_number_of_times_that_word_appear_in_query(path_to_sqlite)
-df_number_of_times_for_words_in_querys=df_number_of_times_for_words_in_querys.reset_index()
-df_number_of_times_for_words_in_querys.rename(columns = {'index':'ranking da palavra', 'numbero_de_consultas_onde_a_palavra_foi_digitada':'número de vezes que aparece'}, inplace = True)
-sns.lineplot(data=df_number_of_times_for_words_in_querys.reset_index(), x="ranking da palavra", y="número de vezes que aparece")
+#############df_number_of_times_for_words_in_querys=count_number_of_times_that_word_appear_in_query(path_to_sqlite)
+#############df_number_of_times_for_words_in_querys=df_number_of_times_for_words_in_querys.reset_index()
+#############df_number_of_times_for_words_in_querys.rename(columns = {'index':'ranking da palavra', 'numbero_de_consultas_onde_a_palavra_foi_digitada':'número de vezes que aparece'}, inplace = True)
+#############sns.lineplot(data=df_number_of_times_for_words_in_querys.reset_index(), x="ranking da palavra", y="número de vezes que aparece")
 
 # %% [markdown]
 # Com as análises apresentadas até agora pode-se dizer que com poucas
@@ -281,7 +291,7 @@ def number_of_queries_coverage_by_groups_with_the_N_most_frequent_words(path_to_
 
 
 # %%[markdown]
-### Criação de vetor médio de palavras consultadas para cada categoria .
+### Criação de vetores médios de palavras consultadas para cada categoria .
 # Para fazer isso devem ser calculados histogramas das palavras que cada produto
 # da base de dados possui com base nas consultas associadas ao produto para então, calcular a média
 # dos histogramas dos produtos associados a uma categoria.
@@ -319,32 +329,76 @@ def populate_table____vector_element(path_to_sqlite3):
         conn.commit()
     conn.close()
 
-populate_table____vector_element(path_to_sqlite)
-"""
-WITH TEMP3 AS (
-SELECT query_elo7.product_id AS product_id,    
-       position_in_vector AS position_in_vector,
-       word AS word,
-       category,
-       SUM(value) AS CC
+
+def calculate_histogram_of_words_for_categories(path_to_sqlite3):
+    conn = sqlite3.connect(path_to_sqlite3)
+    
+    sql="""
+    WITH histogram_of_words_for_products AS (
+    SELECT  query_elo7.product_id AS product_id,    
+            position_in_vector AS position_in_vector,
+            word AS word,
+            category,
+            SUM(value) AS value_vector
+    FROM vector_element
+    INNER JOIN query_elo7 ON query_elo7.querys_elo7_id=vector_element.querys_elo7_id
+
+    GROUP BY query_elo7.product_id,position_in_vector,word,category
+    )
+
+
+    SELECT category,position_in_vector,AVG(value_vector) AS value
+    FROM histogram_of_words_for_products
+    GROUP BY category,position_in_vector
+    ORDER BY category,position_in_vector
+    """
+    df=pd.read_sql_query(sql,conn)
+    return df
+
+#######populate_table____vector_element(path_to_sqlite)
+df_histogram_categories=calculate_histogram_of_words_for_categories(path_to_sqlite)
+
+#%%
+category_vectors={}
+for category in df_histogram_categories['category'].unique():
+    category_vectors[category]=df_histogram_categories[df_histogram_categories['category']==category].sort_values(by=['position_in_vector']).values.transpose()[2]
+
+#%% [markdown]
+# O modulo é uma metrica muito utilizadas em para analisar vetores a seguir,
+# dos vetores médios de palavras consultadas para cada categoria.
+#%%
+def unit_vector(vector):
+    """ Returns the unit vector of the vector.  """
+    return vector / np.linalg.norm(vector)
+
+def angle_between(v1, v2):
+   
+    v1_u = unit_vector(v1)
+    v2_u = unit_vector(v2)
+    return np.arccos(np.clip(np.dot(v1_u, v2_u), -1.0, 1.0))
+
+print(category_vectors)
+
+
+#%%
+def _xorshift32(x,seed):    
+    for i in range(seed+12):
+        x ^= (x << 13) &4294967295
+        x ^= (x >> 17) &4294967295
+        x ^= (x << 5)&4294967295
+    return  x 
+
+conn = sqlite3.connect(path_to_sqlite)
+conn.create_function("xorshift32", 2, _xorshift32)    
+pd.read_sql_query(""" 
+SELECT xorshift32(vector_element_id,5)%10,
+       querys_elo7_id,
+       position_in_vector,
+       word,
+       value
   FROM vector_element
-  INNER JOIN query_elo7 ON query_elo7.querys_elo7_id=vector_element.querys_elo7_id
-
-  GROUP BY query_elo7.product_id,position_in_vector,word,category
-)
-
-
-SELECT category,AVG(CC)
-FROM TEMP3
-GROUP BY category
-ORDER BY category,position_in_vector
-"""
-exit(0)
-
-
-
-
-
+  WHERE (xorshift32(vector_element_id,5)%10)==0
+""",conn)
 # %%[markdown]
 ### Análises dos atributos dos produtos existentes (peso, preço e entrega rápida).
 
