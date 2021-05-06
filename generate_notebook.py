@@ -7,7 +7,7 @@ path_to_database='data/raw/elo7_recruitment_dataset.csv'
 #Definir localização onde SQLite vai ser guardado, é recomendavel usar uma partição
 #mapeada em RAM para aumentar a performance (exemplo /dev/shm)
 #%%
-path_to_sqlite='data/interim/database.sqlite3' #Store the database in ram partition (as /dev/shm) to increase the performance
+path_to_sqlite='/dev/shm/database.sqlite3' #Store the database in ram partition (as /dev/shm) to increase the performance
 
 
 #%%[markdown]
@@ -28,16 +28,41 @@ from nltk.corpus import stopwords
 nltk.download('punkt')
 nltk.download('stopwords')
 #%%
-def pass_csv_database_to_sqlite3(path_to_sqlite3,path_raw_data_in_csv):
+def xorshift32(x):    
+    for i in range(16):
+        x ^= (x << 13) &4294967295
+        x ^= (x >> 17) &4294967295
+        x ^= (x << 5)&4294967295
+    return  x%20
 
+def pass_csv_database_to_sqlite3(path_to_sqlite3,path_raw_data_in_csv):
     conn = sqlite3.connect(path_to_sqlite3)
     df=pd.read_csv(path_raw_data_in_csv)
-    df.to_sql("query_elo7", conn, if_exists="replace",index_label='querys_elo7_id')
+    
+    df=df.reset_index()
+    df=df.rename(columns = {"index": "query_elo7_id"})
+    df['hash_for_query_elo7_id']=df.apply((lambda row: xorshift32(row.query_elo7_id)), axis = 1)
+    df.to_sql("query_elo7", conn, if_exists="replace",index=False)
+    conn.commit()
+    cur=conn.cursor()
+    cur.execute("""
+    CREATE INDEX index_query_elo7_querys_elo7_id ON query_elo7 (
+        query_elo7_id
+    );
+
+    """)
+    cur.execute("""
+    CREATE INDEX index_query_elo7_hash_for_query_elo7_id ON query_elo7 (
+        hash_for_query_elo7_id
+    );
+
+    """)
+    conn.commit()
     conn.close()
 
-#######pass_csv_database_to_sqlite3(path_to_sqlite,path_to_database)
+pass_csv_database_to_sqlite3(path_to_sqlite,path_to_database)
 
-#######load_dataset.create_sqlite_schema()
+load_dataset.create_sqlite_schema()
 
 #%%[markdown]
 #Associar individualmente cada palavras digitadas nas consultas com as 
@@ -68,7 +93,7 @@ def create_schema_for_table___word_typed_in_query___query_elo7(path_to_sqlite3):
     CREATE TABLE word_typed_in_query___query_elo7 (
         word_typed_in_query_id                       INTEGER REFERENCES word_typed_in_query (word_typed_in_query_id) ON DELETE CASCADE
                                                                                                                  ON UPDATE CASCADE,
-        querys_elo7_id                               INTEGER REFERENCES query_elo7 (querys_elo7_id) ON DELETE CASCADE
+        query_elo7_id                               INTEGER REFERENCES query_elo7 (query_elo7_id) ON DELETE CASCADE
                                                                                                 ON UPDATE CASCADE,
         word_typed_in_query___query_elo7_id INTEGER PRIMARY KEY AUTOINCREMENT
     );
@@ -86,17 +111,24 @@ def create_schema_for_table___vector_element(path_to_sqlite3):
     sql="""
     CREATE TABLE vector_element (
     vector_element_id  INTEGER       PRIMARY KEY AUTOINCREMENT,
-    querys_elo7_id     INTEGER       REFERENCES query_elo7 (querys_elo7_id) ON DELETE CASCADE
+    query_elo7_id     INTEGER       REFERENCES query_elo7 (query_elo7_id) ON DELETE CASCADE
                                                                             ON UPDATE CASCADE,
     position_in_vector INT,
     word               VARCHAR (256),
-    value              DOUBLE
+    value              DOUBLE,
+    hash_for_query_elo7_id INTEGER
     );
     """
     cur.execute(sql)
     cur.execute("""
-    CREATE INDEX vector_element___querys_elo7_id ON vector_element (
-        querys_elo7_id
+    CREATE INDEX index_vector_element___query_elo7_id ON vector_element (
+        query_elo7_id
+    );
+
+    """)
+    cur.execute("""
+    CREATE INDEX index_vector_element___hash_for_query_elo7_id ON vector_element (
+        hash_for_query_elo7_id
     );
 
     """)
@@ -143,7 +175,7 @@ def word_typed_in_query___query_elo7(path_to_sqlite3):
     for line in cur:
         converter_word_to_word_id_in_table[line[0]]=line[1]
 
-    cur.execute(""" SELECT querys_elo7_id,
+    cur.execute(""" SELECT query_elo7_id,
                            query
                     FROM query_elo7;
                 """)
@@ -155,23 +187,23 @@ def word_typed_in_query___query_elo7(path_to_sqlite3):
             sql='''
             INSERT INTO word_typed_in_query___query_elo7 (
                                                           word_typed_in_query_id,
-                                                          querys_elo7_id
+                                                          query_elo7_id
                                                       )
                                                       VALUES (
                                                             {word_typed_in_query_id},
-                                                            {querys_elo7_id}
+                                                            {query_elo7_id}
                                                       );
-            '''.format(word_typed_in_query_id=word_id, querys_elo7_id=line[0])
+            '''.format(word_typed_in_query_id=word_id, query_elo7_id=line[0])
             cur2.execute(sql)
     conn.commit()
     conn.close()
 
 
-##########create_schema_for_tables_that_associate_words_in_querys_with_querys_typed(path_to_sqlite)
-##########populate_table__word_typed_in_query(path_to_sqlite)
-##########create_schema_for_table___word_typed_in_query___query_elo7(path_to_sqlite)
-##########word_typed_in_query___query_elo7(path_to_sqlite)
-##########create_schema_for_table___vector_element(path_to_sqlite)
+create_schema_for_tables_that_associate_words_in_querys_with_querys_typed(path_to_sqlite)
+populate_table__word_typed_in_query(path_to_sqlite)
+create_schema_for_table___word_typed_in_query___query_elo7(path_to_sqlite)
+word_typed_in_query___query_elo7(path_to_sqlite)
+create_schema_for_table___vector_element(path_to_sqlite)
 
 
 #%%[markdown]
@@ -204,16 +236,16 @@ def count_number_of_times_that_word_appear_in_query(path_to_sqlite3):
 
     sql="""
     WITH word_typed_in_query___query_elo7_distinct AS (
-        SELECT DISTINCT word_typed_in_query_id, querys_elo7_id 
+        SELECT DISTINCT word_typed_in_query_id, query_elo7_id 
         FROM  word_typed_in_query___query_elo7
     )
-    SELECT COUNT(querys_elo7_id) AS numbero_de_consultas_onde_a_palavra_foi_digitada,
+    SELECT COUNT(query_elo7_id) AS numbero_de_consultas_onde_a_palavra_foi_digitada,
            word_typed_in_query.word AS palavra
     FROM word_typed_in_query___query_elo7_distinct
     INNER JOIN word_typed_in_query ON word_typed_in_query.word_typed_in_query_id=word_typed_in_query___query_elo7_distinct.word_typed_in_query_id
     WHERE  word_typed_in_query.word NOT IN ({stopwords})
     GROUP BY word_typed_in_query___query_elo7_distinct.word_typed_in_query_id
-    ORDER BY COUNT(querys_elo7_id) DESC
+    ORDER BY COUNT(query_elo7_id) DESC
     """.format(stopwords=str(list(stopwords.words('portuguese')))[1:-1])
     
     conn = sqlite3.connect(path_to_sqlite3)
@@ -221,9 +253,9 @@ def count_number_of_times_that_word_appear_in_query(path_to_sqlite3):
 
     conn.close()
     return df
-#############print("Análise de frequência das vinte palavras mais digitadas nas consultas:")
-#############df_number_of_times_for_words_in_querys=count_number_of_times_that_word_appear_in_query(path_to_sqlite)
-#############df_number_of_times_for_words_in_querys.head(20)
+print("Análise de frequência das vinte palavras mais digitadas nas consultas:")
+df_number_of_times_for_words_in_querys=count_number_of_times_that_word_appear_in_query(path_to_sqlite)
+df_number_of_times_for_words_in_querys.head(20)
 # %%[markdown]
 # Pode-se notar um decaimento exponencial (muito rápido) na 
 # frequencia da palavra mais digitada para vigesima mais digitada. <br>
@@ -233,10 +265,10 @@ def count_number_of_times_that_word_appear_in_query(path_to_sqlite3):
 # vezes que ela aparece.
 
 # %%
-#############df_number_of_times_for_words_in_querys=count_number_of_times_that_word_appear_in_query(path_to_sqlite)
-#############df_number_of_times_for_words_in_querys=df_number_of_times_for_words_in_querys.reset_index()
-#############df_number_of_times_for_words_in_querys.rename(columns = {'index':'ranking da palavra', 'numbero_de_consultas_onde_a_palavra_foi_digitada':'número de vezes que aparece'}, inplace = True)
-#############sns.lineplot(data=df_number_of_times_for_words_in_querys.reset_index(), x="ranking da palavra", y="número de vezes que aparece")
+df_number_of_times_for_words_in_querys=count_number_of_times_that_word_appear_in_query(path_to_sqlite)
+df_number_of_times_for_words_in_querys=df_number_of_times_for_words_in_querys.reset_index()
+df_number_of_times_for_words_in_querys.rename(columns = {'index':'ranking da palavra', 'numbero_de_consultas_onde_a_palavra_foi_digitada':'número de vezes que aparece'}, inplace = True)
+sns.lineplot(data=df_number_of_times_for_words_in_querys.reset_index(), x="ranking da palavra", y="número de vezes que aparece")
 
 # %% [markdown]
 # Com as análises apresentadas até agora pode-se dizer que com poucas
@@ -273,12 +305,12 @@ def number_of_queries_coverage_by_groups_with_the_N_most_frequent_words(path_to_
 
     return pd.DataFrame.from_dict(prototype_for_dataframe_with_result)
 
-####df_with_number_of_queries_coverage_by_groups_with_the_N_most_frequent_words=number_of_queries_coverage_by_groups_with_the_N_most_frequent_words(path_to_sqlite,path_to_database)
-####sns.lineplot(data=df_with_number_of_queries_coverage_by_groups_with_the_N_most_frequent_words, x="grupo com as N palavras mais frequentes", y="número de consultas cobertas pelo grupo")
+df_with_number_of_queries_coverage_by_groups_with_the_N_most_frequent_words=number_of_queries_coverage_by_groups_with_the_N_most_frequent_words(path_to_sqlite,path_to_database)
+sns.lineplot(data=df_with_number_of_queries_coverage_by_groups_with_the_N_most_frequent_words, x="grupo com as N palavras mais frequentes", y="número de consultas cobertas pelo grupo")
 
 # %%
-####last_row_for_infomation_about_group_of_words=(df_with_number_of_queries_coverage_by_groups_with_the_N_most_frequent_words.values)[-1]
-####print ("Quantidade consultas cobertas pelo grupo com as {num_of_words} palavras mais frequentes: {num_of_querys}".format(num_of_words=last_row_for_infomation_about_group_of_words[0],num_of_querys=last_row_for_infomation_about_group_of_words[1]))
+last_row_for_infomation_about_group_of_words=(df_with_number_of_queries_coverage_by_groups_with_the_N_most_frequent_words.values)[-1]
+print ("Quantidade consultas cobertas pelo grupo com as {num_of_words} palavras mais frequentes: {num_of_querys}".format(num_of_words=last_row_for_infomation_about_group_of_words[0],num_of_querys=last_row_for_infomation_about_group_of_words[1]))
 
 
 
@@ -290,115 +322,9 @@ def number_of_queries_coverage_by_groups_with_the_N_most_frequent_words(path_to_
 # palavras.
 
 
-# %%[markdown]
-### Criação de vetores médios de palavras consultadas para cada categoria .
-# Para fazer isso devem ser calculados histogramas das palavras que cada produto
-# da base de dados possui com base nas consultas associadas ao produto para então, calcular a média
-# dos histogramas dos produtos associados a uma categoria.
-# Os histogramas podem ser feitos seguindo os seguintes passos: <br>
-# <ul>
-# <li> 
-#   Com base nas 384 palavras mais frequentes associamos cada palavra a uma posição 
-#   vetores de 384 elementos onde, cada produto que esta base de dados vai ter um vetor destes. 
-#   Estes são os vetores que guardam o histograma dos produtos.
-# </li>
-# <li>
-#    Percorrer todas as consultas que existem para cada um dos produtos cadastrados na
-#    base de dados e sempre que achar uma palavra que associada ao vetor de histograma do produto
-#    incrementar o valor do elemento do vetor associado a palavra.
-# </li>
-#</ul>
 
 
-#%%
-def populate_table____vector_element(path_to_sqlite3):
-    ranking_for_occurrence_words_in_querys=list((count_number_of_times_that_word_appear_in_query(path_to_sqlite3)['palavra']).values)[:384]
-    ranking_for_occurrence_words_in_querys.sort()
-    conn = sqlite3.connect(path_to_sqlite3)
-    cur=conn.cursor()
-    cur2=conn.cursor()
-    cur.execute("SELECT querys_elo7_id,query FROM query_elo7")
-    for line in cur:
-        query_words= word_tokenize(line[1])
-        elementsToInsert=""
-        for i in range(len(ranking_for_occurrence_words_in_querys)):
-            number_of_times=query_words.count(ranking_for_occurrence_words_in_querys[i])
-            elementsToInsert=elementsToInsert+"({querys_elo7_id},{position_in_vector},'{word}',{number_of_times}),".format(querys_elo7_id=line[0],position_in_vector=i,word=ranking_for_occurrence_words_in_querys[i],number_of_times=number_of_times)
-        
-        cur2.execute("INSERT INTO vector_element (querys_elo7_id,position_in_vector,word,value) VALUES "+elementsToInsert[:-1])
-        conn.commit()
-    conn.close()
 
-
-def calculate_histogram_of_words_for_categories(path_to_sqlite3):
-    conn = sqlite3.connect(path_to_sqlite3)
-    
-    sql="""
-    WITH histogram_of_words_for_products AS (
-    SELECT  query_elo7.product_id AS product_id,    
-            position_in_vector AS position_in_vector,
-            word AS word,
-            category,
-            SUM(value) AS value_vector
-    FROM vector_element
-    INNER JOIN query_elo7 ON query_elo7.querys_elo7_id=vector_element.querys_elo7_id
-
-    GROUP BY query_elo7.product_id,position_in_vector,word,category
-    )
-
-
-    SELECT category,position_in_vector,AVG(value_vector) AS value
-    FROM histogram_of_words_for_products
-    GROUP BY category,position_in_vector
-    ORDER BY category,position_in_vector
-    """
-    df=pd.read_sql_query(sql,conn)
-    return df
-
-#######populate_table____vector_element(path_to_sqlite)
-df_histogram_categories=calculate_histogram_of_words_for_categories(path_to_sqlite)
-
-#%%
-category_vectors={}
-for category in df_histogram_categories['category'].unique():
-    category_vectors[category]=df_histogram_categories[df_histogram_categories['category']==category].sort_values(by=['position_in_vector']).values.transpose()[2]
-
-#%% [markdown]
-# O modulo é uma metrica muito utilizadas em para analisar vetores a seguir,
-# dos vetores médios de palavras consultadas para cada categoria.
-#%%
-def unit_vector(vector):
-    """ Returns the unit vector of the vector.  """
-    return vector / np.linalg.norm(vector)
-
-def angle_between(v1, v2):
-   
-    v1_u = unit_vector(v1)
-    v2_u = unit_vector(v2)
-    return np.arccos(np.clip(np.dot(v1_u, v2_u), -1.0, 1.0))
-
-print(category_vectors)
-
-
-#%%
-def _xorshift32(x,seed):    
-    for i in range(seed+12):
-        x ^= (x << 13) &4294967295
-        x ^= (x >> 17) &4294967295
-        x ^= (x << 5)&4294967295
-    return  x 
-
-conn = sqlite3.connect(path_to_sqlite)
-conn.create_function("xorshift32", 2, _xorshift32)    
-pd.read_sql_query(""" 
-SELECT xorshift32(vector_element_id,5)%10,
-       querys_elo7_id,
-       position_in_vector,
-       word,
-       value
-  FROM vector_element
-  WHERE (xorshift32(vector_element_id,5)%10)==0
-""",conn)
 # %%[markdown]
 ### Análises dos atributos dos produtos existentes (peso, preço e entrega rápida).
 
@@ -497,3 +423,141 @@ conn.close()
 
 
 # %%[markdown]
+
+
+
+# %%[markdown]
+### Criação de vetores médios de palavras consultadas para cada categoria .
+
+
+#%%[markdown]
+## Sistema de Classificação de Produtos
+#### Histograma de palavras dos produtos associados as palavras digitadas as buscas
+# Esse histograma foi uma das metricas criadas que servem de entrada para os modelos descritos
+# nas seções  **Encontrar o melhor modelo de predição de categorias com base na metodologia K-Fold**, **Sistema de termos de busca** e **Colaboração entre os sistemas**.
+# Para fazer essa métrica devem ser calculados os histogramas das palavras que cada produto
+# da base de dados possui com base nas consultas associadas ao produto para então, calcular a média
+# dos histogramas dos produtos associados a uma categoria.
+# Os histogramas podem ser feitos seguindo os seguintes passos: <br>
+# <ul>
+# <li> 
+#   Com base nas 384 palavras mais frequentes associamos cada palavra a uma posição 
+#   vetores de 384 elementos onde, cada produto que esta base de dados vai ter um vetor destes. 
+#   Estes são os vetores que guardam o histograma dos produtos.
+# </li>
+# <li>
+#    Percorrer todas as consultas que existem para cada um dos produtos cadastrados na
+#    base de dados e sempre que achar uma palavra que associada ao vetor de histograma do produto
+#    incrementar o valor do elemento do vetor associado a palavra.
+# </li>
+#</ul>
+# A seguir o código que cria os histogramas para cada consulta.
+
+#%%
+def populate_table____vector_element(path_to_sqlite3):
+    ranking_for_occurrence_words_in_querys=list((count_number_of_times_that_word_appear_in_query(path_to_sqlite3)['palavra']).values)[:384]
+    ranking_for_occurrence_words_in_querys.sort()
+    conn = sqlite3.connect(path_to_sqlite3)
+    cur=conn.cursor()
+    cur2=conn.cursor()
+    cur.execute("SELECT query_elo7_id,query FROM query_elo7")
+    for line in cur:
+        query_words= word_tokenize(line[1])
+        elementsToInsert=""
+        for i in range(len(ranking_for_occurrence_words_in_querys)):
+            number_of_times=query_words.count(ranking_for_occurrence_words_in_querys[i])
+            elementsToInsert=elementsToInsert+"({query_elo7_id},{position_in_vector},'{word}',{number_of_times},{hash_for_query_elo7_id}),".format(query_elo7_id=line[0],position_in_vector=i,word=ranking_for_occurrence_words_in_querys[i],number_of_times=number_of_times,hash_for_query_elo7_id=xorshift32(line[0]))
+        
+        cur2.execute("INSERT INTO vector_element (query_elo7_id,position_in_vector,word,value,hash_for_query_elo7_id) VALUES "+elementsToInsert[:-1])
+        conn.commit()
+    conn.close()
+
+populate_table____vector_element(path_to_sqlite)
+
+
+
+#%% [markdown]
+# A partir dos histogramas criados para os produtos podemos calcular os histogramas médios para as categorias, a seguir o codigo que cria estes histogramas:
+#%%
+def calculate_histogram_of_words_for_categories(path_to_sqlite3):
+    conn = sqlite3.connect(path_to_sqlite3)
+    
+    sql="""
+    WITH histogram_of_words_for_products AS (
+    SELECT  query_elo7.product_id AS product_id,    
+            position_in_vector AS position_in_vector,
+            word AS word,
+            category,
+            SUM(value) AS value_vector
+    FROM vector_element
+    INNER JOIN query_elo7 ON query_elo7.query_elo7_id=vector_element.query_elo7_id
+
+    GROUP BY query_elo7.product_id,position_in_vector,word,category
+    )
+
+
+    SELECT category,position_in_vector,AVG(value_vector) AS value
+    FROM histogram_of_words_for_products
+    GROUP BY category,position_in_vector
+    ORDER BY category,position_in_vector
+    """
+    df=pd.read_sql_query(sql,conn)
+    category_vectors={}
+    for category in df['category'].unique():
+        category_vectors[category]=df_histogram_categories[df_histogram_categories['category']==category].sort_values(by=['position_in_vector']).values.transpose()[2]
+
+    return category_vectors
+
+
+#%% [markdown]
+# Outra métrica criada a partir dos histogramas é quão parecido o histograma de um produto
+# é do histograma de uma categoria, para saber se dois vetores são parecidos pode-se utilizar
+# o cálculo do angulo entre eles, a seguir o código que faz esse cálculo:
+#%%
+def unit_vector(vector):
+    """ Returns the unit vector of the vector.  """
+    return vector / np.linalg.norm(vector)
+
+def angle_between(v1, v2):
+   
+    v1_u = unit_vector(v1)
+    v2_u = unit_vector(v2)
+    return np.arccos(np.clip(np.dot(v1_u, v2_u), -1.0, 1.0))
+
+df_histogram_categories=calculate_histogram_of_words_for_categories(path_to_sqlite)
+
+#%%[markdown]
+#### Variáveis utilizadas para a criação do sistema
+# Para a criação de sistema foram utilizados os campos price weight das consultas  
+# e o histograma de palavras dos produtos associados as palavras digitadas as buscas, os próximos 
+#### Encontrar o melhor modelo de predição de categorias com base na metodologia K-Fold 
+# A maioria dos passos a seguir vão ser repetidos varias vezes com o objetivo de encontrar o melho modelo, esta 
+# repetição usa a metodoliga K-Fold e ela consiste de:
+# <ul>
+# <li>
+#    Dividir um conjunto de dados em validação e não validação de forma aleatória.
+# </li>
+# <li> 
+#   Dividir a não validação do conjunto de dados em treinamento e teste, com 90% do conjunto como treinamento e 10% teste.
+# </li>
+# <li>
+#    Treinar um modelo no conjunto de treinamento e testa-lo no conjunto de teste e no conjunto de validação.
+# </li>
+# <li>
+#    Repartir a não validação entre treinamento e teste de modo que 10% do conjunto de treino anterior vire o conjunto de  teste atual e os elementos do conjunto de teste anterior entrem no conjunto de treinamento atual.
+# </li>
+# <li>
+#    Voltar para o passo 3 até todos os elementos do conjunto de não validação tenham sido utilizados para treinar ao menos um modelo.
+# </li>
+# <li>
+#    Utilizar o modelo que obteve melhor resultado no conjunto de validação.
+# </li>
+# </ul>
+# Para facilitar o escolha dos conjuntos que dados que vão ser parte do treino, teste e validação as tabelas vector_element e query_elo7 
+# possuem uma coluna chamada hash_for_query_elo7_id  onde o valor de hash vai de 0 a 19 deste modo, a divisão pode ser feita com base nos valores do hash
+# que devem ser utilizados para que elementos destas tabelas façam parte dos conjuntos de treino, teste e validação.
+
+#%% [markdown]
+# O modulo é uma metrica muito utilizadas em para analisar vetores a seguir,
+# dos vetores médios de palavras consultadas para cada categoria.
+
