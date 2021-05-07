@@ -7,7 +7,7 @@ path_to_database='data/raw/elo7_recruitment_dataset.csv'
 #Definir localização onde SQLite vai ser guardado, é recomendavel usar uma partição
 #mapeada em RAM para aumentar a performance (exemplo /dev/shm)
 #%%
-path_to_sqlite='/dev/shm/temp.sqlite3' #Store the database in ram partition (as /dev/shm) to increase the performance
+path_to_sqlite='data/interim/database.sqlite3' #Store the database in ram partition (as /dev/shm) to increase the performance
 
 
 #%%[markdown]
@@ -24,6 +24,7 @@ import nltk
 import numpy as np
 from nltk import word_tokenize
 from nltk.corpus import stopwords
+import sklearn 
 
 nltk.download('punkt')
 nltk.download('stopwords')
@@ -60,9 +61,9 @@ def pass_csv_database_to_sqlite3(path_to_sqlite3,path_raw_data_in_csv):
     conn.commit()
     conn.close()
 
-pass_csv_database_to_sqlite3(path_to_sqlite,path_to_database)
+#####pass_csv_database_to_sqlite3(path_to_sqlite,path_to_database)
 
-load_dataset.create_sqlite_schema()
+######load_dataset.create_sqlite_schema()
 
 #%%[markdown]
 #Associar individualmente cada palavras digitadas nas consultas com as 
@@ -199,11 +200,11 @@ def word_typed_in_query___query_elo7(path_to_sqlite3):
     conn.close()
 
 
-create_schema_for_tables_that_associate_words_in_querys_with_querys_typed(path_to_sqlite)
-populate_table__word_typed_in_query(path_to_sqlite)
-create_schema_for_table___word_typed_in_query___query_elo7(path_to_sqlite)
-word_typed_in_query___query_elo7(path_to_sqlite)
-create_schema_for_table___vector_element(path_to_sqlite)
+###create_schema_for_tables_that_associate_words_in_querys_with_querys_typed(path_to_sqlite)
+###populate_table__word_typed_in_query(path_to_sqlite)
+###create_schema_for_table___word_typed_in_query___query_elo7(path_to_sqlite)
+###word_typed_in_query___query_elo7(path_to_sqlite)
+###create_schema_for_table___vector_element(path_to_sqlite)
 
 
 #%%[markdown]
@@ -253,9 +254,9 @@ def count_number_of_times_that_word_appear_in_query(path_to_sqlite3):
 
     conn.close()
     return df
-print("Análise de frequência das vinte palavras mais digitadas nas consultas:")
-df_number_of_times_for_words_in_querys=count_number_of_times_that_word_appear_in_query(path_to_sqlite)
-df_number_of_times_for_words_in_querys.head(20)
+#####print("Análise de frequência das vinte palavras mais digitadas nas consultas:")
+#####df_number_of_times_for_words_in_querys=count_number_of_times_that_word_appear_in_query(path_to_sqlite)
+#####df_number_of_times_for_words_in_querys.head(20)
 # %%[markdown]
 # Pode-se notar um decaimento exponencial (muito rápido) na 
 # frequencia da palavra mais digitada para vigesima mais digitada. <br>
@@ -265,10 +266,10 @@ df_number_of_times_for_words_in_querys.head(20)
 # vezes que ela aparece.
 
 # %%
-df_number_of_times_for_words_in_querys=count_number_of_times_that_word_appear_in_query(path_to_sqlite)
-df_number_of_times_for_words_in_querys=df_number_of_times_for_words_in_querys.reset_index()
-df_number_of_times_for_words_in_querys.rename(columns = {'index':'ranking da palavra', 'numbero_de_consultas_onde_a_palavra_foi_digitada':'número de vezes que aparece'}, inplace = True)
-sns.lineplot(data=df_number_of_times_for_words_in_querys.reset_index(), x="ranking da palavra", y="número de vezes que aparece")
+######df_number_of_times_for_words_in_querys=count_number_of_times_that_word_appear_in_query(path_to_sqlite)
+#####df_number_of_times_for_words_in_querys=df_number_of_times_for_words_in_querys.reset_index()
+#####df_number_of_times_for_words_in_querys.rename(columns = {'index':'ranking da palavra', 'numbero_de_consultas_onde_a_palavra_foi_digitada':'número de vezes que aparece'}, inplace = True)
+#####sns.lineplot(data=df_number_of_times_for_words_in_querys.reset_index(), x="ranking da palavra", y="número de vezes que aparece")
 
 # %% [markdown]
 # Com as análises apresentadas até agora pode-se dizer que com poucas
@@ -305,12 +306,12 @@ def number_of_queries_coverage_by_groups_with_the_N_most_frequent_words(path_to_
 
     return pd.DataFrame.from_dict(prototype_for_dataframe_with_result)
 
-df_with_number_of_queries_coverage_by_groups_with_the_N_most_frequent_words=number_of_queries_coverage_by_groups_with_the_N_most_frequent_words(path_to_sqlite,path_to_database)
-sns.lineplot(data=df_with_number_of_queries_coverage_by_groups_with_the_N_most_frequent_words, x="grupo com as N palavras mais frequentes", y="número de consultas cobertas pelo grupo")
+####df_with_number_of_queries_coverage_by_groups_with_the_N_most_frequent_words=number_of_queries_coverage_by_groups_with_the_N_most_frequent_words(path_to_sqlite,path_to_database)
+####sns.lineplot(data=df_with_number_of_queries_coverage_by_groups_with_the_N_most_frequent_words, x="grupo com as N palavras mais frequentes", y="número de consultas cobertas pelo grupo")
 
 # %%
-last_row_for_infomation_about_group_of_words=(df_with_number_of_queries_coverage_by_groups_with_the_N_most_frequent_words.values)[-1]
-print ("Quantidade consultas cobertas pelo grupo com as {num_of_words} palavras mais frequentes: {num_of_querys}".format(num_of_words=last_row_for_infomation_about_group_of_words[0],num_of_querys=last_row_for_infomation_about_group_of_words[1]))
+####last_row_for_infomation_about_group_of_words=(df_with_number_of_queries_coverage_by_groups_with_the_N_most_frequent_words.values)[-1]
+####print ("Quantidade consultas cobertas pelo grupo com as {num_of_words} palavras mais frequentes: {num_of_querys}".format(num_of_words=last_row_for_infomation_about_group_of_words[0],num_of_querys=last_row_for_infomation_about_group_of_words[1]))
 
 
 
@@ -336,8 +337,8 @@ print ("Quantidade consultas cobertas pelo grupo com as {num_of_words} palavras 
 #%%
 conn=sqlite3.connect(path_to_sqlite)
 
-df=pd.read_sql_query("""SELECT DISTINCT product_id, category, weight FROM query_elo7 WHERE weight""",conn)
-sns.histplot(hue="category", x="weight", data=df,bins=10)
+#####df=pd.read_sql_query("""SELECT DISTINCT product_id, category, weight FROM query_elo7 WHERE weight""",conn)
+####sns.histplot(hue="category", x="weight", data=df,bins=10)
 conn.close()
 # %%
 # %%[markdown]
@@ -346,8 +347,8 @@ conn.close()
 conn=sqlite3.connect(path_to_sqlite)
 
 df=pd.read_sql_query("""SELECT DISTINCT product_id, category, weight FROM query_elo7 WHERE weight<40""",conn)
-#ax = sns.boxplot(x="category", y="weight", data=df)
-sns.histplot(hue="category", x="weight", data=df,bins=10)
+
+####sns.histplot(hue="category", x="weight", data=df,bins=10)
 conn.close()
 
 
@@ -358,8 +359,8 @@ conn.close()
 #%%
 conn=sqlite3.connect(path_to_sqlite)
 
-df=pd.read_sql_query("""SELECT DISTINCT product_id, category, price FROM query_elo7 WHERE price""",conn)
-sns.histplot(hue="category", x="price", data=df,bins=10)
+####df=pd.read_sql_query("""SELECT DISTINCT product_id, category, price FROM query_elo7 WHERE price""",conn)
+####sns.histplot(hue="category", x="price", data=df,bins=10)
 conn.close()
 
 # %%[markdown]
@@ -367,9 +368,9 @@ conn.close()
 #%%
 conn=sqlite3.connect(path_to_sqlite)
 
-df=pd.read_sql_query("""SELECT DISTINCT product_id, category, price FROM query_elo7 WHERE price<200  """,conn)
+######df=pd.read_sql_query("""SELECT DISTINCT product_id, category, price FROM query_elo7 WHERE price<200  """,conn)
 #ax = sns.boxplot(x="category", y="weight", data=df)
-sns.histplot(hue="category", x="price", data=df,bins=10)
+#####sns.histplot(hue="category", x="price", data=df,bins=10)
 conn.close()
 
 
@@ -382,9 +383,9 @@ conn.close()
 #%%
 conn=sqlite3.connect(path_to_sqlite)
 
-df=pd.read_sql_query("""SELECT DISTINCT product_id, category, price FROM query_elo7 WHERE  price<200 AND category!='Lembrancinhas'  """,conn)
+####df=pd.read_sql_query("""SELECT DISTINCT product_id, category, price FROM query_elo7 WHERE  price<200 AND category!='Lembrancinhas'  """,conn)
 #ax = sns.boxplot(x="category", y="weight", data=df)
-sns.histplot(hue="category", x="price", data=df,bins=10)
+####sns.histplot(hue="category", x="price", data=df,bins=10)
 conn.close()
 
 
@@ -407,12 +408,12 @@ df=pd.read_sql_query("""SELECT DISTINCT product_id, category, express_delivery F
 
 df['express_delivery']=df['express_delivery'].apply(lambda x: 'yes' if x>0.0 else 'no')
 categories=df['category'].unique()
-for category in categories:
-    print("Distribuição para a categoria:"+str(category)+"\n")
-    dfT=df[df['category']==category]
-    sns.histplot( x="express_delivery", data=dfT.sort_values(by=['express_delivery']), stat='probability',discrete=True, shrink=.8)
-    plt.show()
-    print("\n\n\n\n")
+####for category in categories:
+    ####print("Distribuição para a categoria:"+str(category)+"\n")
+    ####dfT=df[df['category']==category]
+    ####sns.histplot( x="express_delivery", data=dfT.sort_values(by=['express_delivery']), stat='probability',discrete=True, shrink=.8)
+    ####plt.show()
+    #####print("\n\n\n\n")
 
 
 conn.close()
@@ -472,7 +473,7 @@ def populate_table____vector_element(path_to_sqlite3):
         conn.commit()
     conn.close()
 
-populate_table____vector_element(path_to_sqlite)
+###populate_table____vector_element(path_to_sqlite)
 
 
 
@@ -524,7 +525,7 @@ def angle_between(v1, v2):
     v2_u = unit_vector(v2)
     return np.arccos(np.clip(np.dot(v1_u, v2_u), -1.0, 1.0))
 
-df_histogram_categories=calculate_histogram_of_words_for_categories(path_to_sqlite)
+####df_histogram_categories=calculate_histogram_of_words_for_categories(path_to_sqlite)
 
 #%%[markdown]
 #### Variáveis utilizadas para a criação do sistema
@@ -553,8 +554,153 @@ df_histogram_categories=calculate_histogram_of_words_for_categories(path_to_sqli
 #    Utilizar o modelo que obteve melhor resultado no conjunto de validação.
 # </li>
 # </ul>
+#
 # Para facilitar o escolha dos conjuntos que dados que vão ser parte do treino, teste e validação as tabelas vector_element e query_elo7 
 # possuem uma coluna chamada hash_for_query_elo7_id  onde o valor de hash vai de 0 a 19 deste modo, a divisão pode ser feita com base nos valores do hash
 # que devem ser utilizados para que elementos destas tabelas façam parte dos conjuntos de treino, teste e validação.
+#%%
+
+def transform_products_load_as_dict_to_dataframeX_variable_to_fit_Y(products):
+    dataFrameInDict={'price':[],'weight':[],'express_delivery':[]}
+    y=[]
+    for i in range(384):
+        dataFrameInDict['vector_e'+str(i)]=[]
+
+    for product_id in products:
+        product=products[product_id]
+        dataFrameInDict['price'].append(product['price'])
+        dataFrameInDict['weight'].append(product['weight'])
+        dataFrameInDict['express_delivery'].append(product['express_delivery'])
+        for i in range(384):
+            dataFrameInDict['vector_e'+str(i)].append(product['vector'][i])
+
+        y.append(product['category'])
+
+    df=pd.DataFrame.from_dict(dataFrameInDict)
+    df['weight'].fillna(value=df['weight'].mean(), inplace=True)
+    df['price'].fillna(value=df['price'].mean(), inplace=True)
+    df['price'].fillna(value=0, inplace=True)
+    return {'dataframeX':df,'Y':y}
+
+def pass_sql_query_to_get_data_to_train_and_test_and_validation_to_dictonaries_where_the_key_is_the_product_id(path_to_sqlite3,query):
+    conn = sqlite3.connect(path_to_sqlite3)
+    cur=conn.cursor()
+    
+    
+    information_about_products={}
+    sql="""
+    SELECT DISTINCT product_id,       
+           category,
+           weight,
+           price,
+           express_delivery
+    FROM query_elo7;
+    """
+    cur.execute(sql)
+    for row in cur:
+        information_about_products[row[0]]={"category":row[1],"weight":row[2],"price":row[3],'express_delivery':row[4]}
+
+    cur.execute(query)
+    productsDict={}
+
+    for row in cur:
+        if(not (row[0]  in productsDict)):
+            productsDict[row[0]]={'vector':np.zeros(384),
+                                   'category':information_about_products[row[0]]['category'],
+                                   'weight':information_about_products[row[0]]['weight'],
+                                   'price':information_about_products[row[0]]['price'],
+                                   'express_delivery':information_about_products[row[0]]['express_delivery']
+                                   }
+
+        productsDict[row[0]]['vector'][row[1]]=row[2]
+    conn.close()
+    return productsDict
+
+def get_data_to_validation(path_to_sqlite3):
+    sql="""
+    WITH vector_products AS (
+        SELECT query_elo7.product_id,
+            vector_element.position_in_vector,       
+            SUM(vector_element.value) AS value    
+            FROM vector_element
+        INNER JOIN query_elo7 ON query_elo7.query_elo7_id=vector_element.query_elo7_id
+        WHERE vector_element.hash_for_query_elo7_id>=15
+  
+        GROUP BY query_elo7.product_id,vector_element.position_in_vector
+        ORDER BY query_elo7.product_id,vector_element.position_in_vector
+    )  
+  
+    SELECT product_id, 
+           position_in_vector,
+           value
+    FROM vector_products
+    WHERE value>0
+    """
+    
+    products_dict_validation=pass_sql_query_to_get_data_to_train_and_test_and_validation_to_dictonaries_where_the_key_is_the_product_id(path_to_sqlite3,sql)
+    return transform_products_load_as_dict_to_dataframeX_variable_to_fit_Y(products_dict_validation)
+
+def get_data_to_train_and_test(path_to_sqlite3,folder):
+    sql="""
+    WITH vector_products AS (
+        SELECT query_elo7.product_id,
+            vector_element.position_in_vector,       
+            SUM(vector_element.value) AS value    
+            FROM vector_element
+        INNER JOIN query_elo7 ON query_elo7.query_elo7_id=vector_element.query_elo7_id
+        WHERE vector_element.hash_for_query_elo7_id<15 AND vector_element.hash_for_query_elo7_id NOT IN ({folder1},{folder2})
+  
+        GROUP BY query_elo7.product_id,vector_element.position_in_vector
+        ORDER BY query_elo7.product_id,vector_element.position_in_vector
+    )  
+  
+    SELECT product_id, 
+           position_in_vector,
+           value
+    FROM vector_products
+    WHERE value>0
+    """.format(folder1=folder*2,folder2=(folder*2)+1)
+    
+    products_dict_train=pass_sql_query_to_get_data_to_train_and_test_and_validation_to_dictonaries_where_the_key_is_the_product_id(path_to_sqlite3,sql)
 
 
+
+    sql="""
+    WITH vector_products AS (
+        SELECT query_elo7.product_id,
+            vector_element.position_in_vector,       
+            SUM(vector_element.value) AS value    
+            FROM vector_element
+        INNER JOIN query_elo7 ON query_elo7.query_elo7_id=vector_element.query_elo7_id
+        WHERE vector_element.hash_for_query_elo7_id<15 AND vector_element.hash_for_query_elo7_id  IN ({folder1},{folder2})
+  
+        GROUP BY query_elo7.product_id,vector_element.position_in_vector
+        ORDER BY query_elo7.product_id,vector_element.position_in_vector
+    )  
+  
+    SELECT product_id, 
+           position_in_vector,
+           value
+    FROM vector_products
+    WHERE value>0
+    """.format(folder1=folder*2,folder2=(folder*2)+1)
+    products_dict_test=pass_sql_query_to_get_data_to_train_and_test_and_validation_to_dictonaries_where_the_key_is_the_product_id(path_to_sqlite3,sql)
+
+    return  {
+                "train":transform_products_load_as_dict_to_dataframeX_variable_to_fit_Y(products_dict_train),
+                "test":transform_products_load_as_dict_to_dataframeX_variable_to_fit_Y(products_dict_test)
+            }
+    
+data_train_test=get_data_to_train_and_test(path_to_sqlite,3)
+data_validation=get_data_to_validation(path_to_sqlite)
+print("hello")
+
+from sklearn import tree
+from sklearn.metrics import confusion_matrix
+from sklearn.metrics import accuracy_score
+clf = tree.DecisionTreeClassifier()
+clf = clf.fit(data_train_test['train']['dataframeX'], data_train_test['train']['Y'])
+ypred=clf.predict(data_validation['dataframeX'])
+confusion_matrix(data_validation['Y'], ypred, labels=pd.Series(list(ypred)+data_validation['Y']).unique())
+#sklearn.tree.DecisionTreeClassifier()
+#sklearn.metrics.confusion_matrix()
