@@ -7,7 +7,7 @@ path_to_database='data/raw/elo7_recruitment_dataset.csv'
 #Definir localização onde SQLite vai ser guardado, é recomendavel usar uma partição
 #mapeada em RAM para aumentar a performance (exemplo /dev/shm)
 #%%
-path_to_sqlite='/dev/shm/database.sqlite3' #Store the database in ram partition (as /dev/shm) to increase the performance
+path_to_sqlite='/dev/shm/temp.sqlite3' #Store the database in ram partition (as /dev/shm) to increase the performance
 
 
 #%%[markdown]
@@ -504,7 +504,7 @@ def calculate_histogram_of_words_for_categories(path_to_sqlite3):
     df=pd.read_sql_query(sql,conn)
     category_vectors={}
     for category in df['category'].unique():
-        category_vectors[category]=df_histogram_categories[df_histogram_categories['category']==category].sort_values(by=['position_in_vector']).values.transpose()[2]
+        category_vectors[category]=df[df['category']==category].sort_values(by=['position_in_vector']).values.transpose()[2]
 
     return category_vectors
 
@@ -557,7 +557,4 @@ df_histogram_categories=calculate_histogram_of_words_for_categories(path_to_sqli
 # possuem uma coluna chamada hash_for_query_elo7_id  onde o valor de hash vai de 0 a 19 deste modo, a divisão pode ser feita com base nos valores do hash
 # que devem ser utilizados para que elementos destas tabelas façam parte dos conjuntos de treino, teste e validação.
 
-#%% [markdown]
-# O modulo é uma metrica muito utilizadas em para analisar vetores a seguir,
-# dos vetores médios de palavras consultadas para cada categoria.
 
