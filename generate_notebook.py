@@ -25,6 +25,9 @@ import numpy as np
 from nltk import word_tokenize
 from nltk.corpus import stopwords
 import sklearn 
+from sklearn import tree
+from sklearn.metrics import confusion_matrix
+from sklearn.metrics import accuracy_score
 
 nltk.download('punkt')
 nltk.download('stopwords')
@@ -43,6 +46,7 @@ def pass_csv_database_to_sqlite3(path_to_sqlite3,path_raw_data_in_csv):
     df=df.reset_index()
     df=df.rename(columns = {"index": "query_elo7_id"})
     df['hash_for_query_elo7_id']=df.apply((lambda row: xorshift32(row.query_elo7_id)), axis = 1)
+    df['hash_for_product_id']=df.apply((lambda row: xorshift32(row.product_id)), axis = 1)
     df.to_sql("query_elo7", conn, if_exists="replace",index=False)
     conn.commit()
     cur=conn.cursor()
@@ -61,7 +65,7 @@ def pass_csv_database_to_sqlite3(path_to_sqlite3,path_raw_data_in_csv):
     conn.commit()
     conn.close()
 
-#####pass_csv_database_to_sqlite3(path_to_sqlite,path_to_database)
+pass_csv_database_to_sqlite3(path_to_sqlite,path_to_database)
 
 ######load_dataset.create_sqlite_schema()
 
@@ -200,11 +204,11 @@ def word_typed_in_query___query_elo7(path_to_sqlite3):
     conn.close()
 
 
-###create_schema_for_tables_that_associate_words_in_querys_with_querys_typed(path_to_sqlite)
-###populate_table__word_typed_in_query(path_to_sqlite)
-###create_schema_for_table___word_typed_in_query___query_elo7(path_to_sqlite)
-###word_typed_in_query___query_elo7(path_to_sqlite)
-###create_schema_for_table___vector_element(path_to_sqlite)
+######create_schema_for_tables_that_associate_words_in_querys_with_querys_typed(path_to_sqlite)
+######populate_table__word_typed_in_query(path_to_sqlite)
+######create_schema_for_table___word_typed_in_query___query_elo7(path_to_sqlite)
+######word_typed_in_query___query_elo7(path_to_sqlite)
+######create_schema_for_table___vector_element(path_to_sqlite)
 
 
 #%%[markdown]
@@ -473,7 +477,7 @@ def populate_table____vector_element(path_to_sqlite3):
         conn.commit()
     conn.close()
 
-###populate_table____vector_element(path_to_sqlite)
+######populate_table____vector_element(path_to_sqlite)
 
 
 
@@ -529,8 +533,8 @@ def angle_between(v1, v2):
 
 #%%[markdown]
 #### Variáveis utilizadas para a criação do sistema
-# Para a criação de sistema foram utilizados os campos price weight das consultas  
-# e o histograma de palavras dos produtos associados as palavras digitadas as buscas, os próximos 
+# Para a criação de sistema foram utilizados os campos price, weight e express_delivery das consultas  
+# e o histograma de palavras dos produtos associados as palavras digitadas as buscas.
 #### Encontrar o melhor modelo de predição de categorias com base na metodologia K-Fold 
 # A maioria dos passos a seguir vão ser repetidos varias vezes com o objetivo de encontrar o melho modelo, esta 
 # repetição usa a metodoliga K-Fold e ela consiste de:
@@ -539,13 +543,13 @@ def angle_between(v1, v2):
 #    Dividir um conjunto de dados em validação e não validação de forma aleatória.
 # </li>
 # <li> 
-#   Dividir a não validação do conjunto de dados em treinamento e teste, com 90% do conjunto como treinamento e 10% teste.
+#   Dividir a não validação do conjunto de dados em treinamento e teste, com 86.67% do conjunto como treinamento e 13.33% teste.
 # </li>
 # <li>
 #    Treinar um modelo no conjunto de treinamento e testa-lo no conjunto de teste e no conjunto de validação.
 # </li>
 # <li>
-#    Repartir a não validação entre treinamento e teste de modo que 10% do conjunto de treino anterior vire o conjunto de  teste atual e os elementos do conjunto de teste anterior entrem no conjunto de treinamento atual.
+#    Repartir a não validação entre treinamento e teste de modo que 13.33% do conjunto de treino anterior vire o conjunto de  teste atual e os elementos do conjunto de teste anterior entrem no conjunto de treinamento atual.
 # </li>
 # <li>
 #    Voltar para o passo 3 até todos os elementos do conjunto de não validação tenham sido utilizados para treinar ao menos um modelo.
@@ -555,9 +559,14 @@ def angle_between(v1, v2):
 # </li>
 # </ul>
 #
-# Para facilitar o escolha dos conjuntos que dados que vão ser parte do treino, teste e validação as tabelas vector_element e query_elo7 
-# possuem uma coluna chamada hash_for_query_elo7_id  onde o valor de hash vai de 0 a 19 deste modo, a divisão pode ser feita com base nos valores do hash
-# que devem ser utilizados para que elementos destas tabelas façam parte dos conjuntos de treino, teste e validação.
+# Para facilitar o escolha dos conjuntos que dados que vão ser parte do treino, teste e 
+# validação as tabelas vector_element e query_elo7 possuem uma coluna chamada hash_for_query_elo7_id
+# onde o valor de hash vai de 0 a 19 deste modo, a divisão pode ser feita com base nos valores do
+#  hash que devem ser utilizados para que elementos destas tabelas façam parte dos conjuntos de treino,
+# teste e validação. Para a seleção do melhor modelo a métrica utilizada foi a media das acuracias 
+# alcançadas para classificar cada categoria.
+
+# A seguir a matriz de confusão e a acurácia média para o melhor de modelo de predição encontrado para a elaboração do sistema:
 #%%
 
 def transform_products_load_as_dict_to_dataframeX_variable_to_fit_Y(products):
@@ -624,7 +633,8 @@ def get_data_to_validation(path_to_sqlite3):
             SUM(vector_element.value) AS value    
             FROM vector_element
         INNER JOIN query_elo7 ON query_elo7.query_elo7_id=vector_element.query_elo7_id
-        WHERE vector_element.hash_for_query_elo7_id>=15
+        WHERE query_elo7.hash_for_product_id>=15
+
   
         GROUP BY query_elo7.product_id,vector_element.position_in_vector
         ORDER BY query_elo7.product_id,vector_element.position_in_vector
@@ -648,7 +658,7 @@ def get_data_to_train_and_test(path_to_sqlite3,folder):
             SUM(vector_element.value) AS value    
             FROM vector_element
         INNER JOIN query_elo7 ON query_elo7.query_elo7_id=vector_element.query_elo7_id
-        WHERE vector_element.hash_for_query_elo7_id<15 AND vector_element.hash_for_query_elo7_id NOT IN ({folder1},{folder2})
+        WHERE query_elo7.hash_for_product_id<15 AND query_elo7.hash_for_product_id  NOT IN ({folder1},{folder2})
   
         GROUP BY query_elo7.product_id,vector_element.position_in_vector
         ORDER BY query_elo7.product_id,vector_element.position_in_vector
@@ -672,7 +682,7 @@ def get_data_to_train_and_test(path_to_sqlite3,folder):
             SUM(vector_element.value) AS value    
             FROM vector_element
         INNER JOIN query_elo7 ON query_elo7.query_elo7_id=vector_element.query_elo7_id
-        WHERE vector_element.hash_for_query_elo7_id<15 AND vector_element.hash_for_query_elo7_id  IN ({folder1},{folder2})
+        WHERE query_elo7.hash_for_product_id<15 AND query_elo7.hash_for_product_id  IN ({folder1},{folder2})
   
         GROUP BY query_elo7.product_id,vector_element.position_in_vector
         ORDER BY query_elo7.product_id,vector_element.position_in_vector
@@ -690,17 +700,77 @@ def get_data_to_train_and_test(path_to_sqlite3,folder):
                 "train":transform_products_load_as_dict_to_dataframeX_variable_to_fit_Y(products_dict_train),
                 "test":transform_products_load_as_dict_to_dataframeX_variable_to_fit_Y(products_dict_test)
             }
-    
-data_train_test=get_data_to_train_and_test(path_to_sqlite,3)
-data_validation=get_data_to_validation(path_to_sqlite)
-print("hello")
 
-from sklearn import tree
-from sklearn.metrics import confusion_matrix
-from sklearn.metrics import accuracy_score
-clf = tree.DecisionTreeClassifier()
-clf = clf.fit(data_train_test['train']['dataframeX'], data_train_test['train']['Y'])
-ypred=clf.predict(data_validation['dataframeX'])
-confusion_matrix(data_validation['Y'], ypred, labels=pd.Series(list(ypred)+data_validation['Y']).unique())
+
+
+
+def defineBetterModel(path_to_sqlite,data_validation,dropColumnsFromDataTrainAndTest=[]):
+    bestModel=None
+    averageAcuracyForBestModel=None
+    for i in range(7):
+        
+
+        data_train_test=get_data_to_train_and_test(path_to_sqlite,i)
+        if(len(dropColumnsFromDataTrainAndTest)>0):
+            data_train_test['train']['dataframeX']=data_train_test['train']['dataframeX'].drop(dropColumnsFromDataTrainAndTest, axis=1)
+
+        clf = tree.DecisionTreeClassifier()
+        clf = clf.fit(data_train_test['train']['dataframeX'], data_train_test['train']['Y'])
+        ypred=clf.predict(data_validation['dataframeX'])
+
+        confusion_mat=confusion_matrix(data_validation['Y'], ypred, labels=pd.Series(list(ypred)+data_validation['Y']).unique())
+        avg_acc=0.0
+        for i in range(len(confusion_mat)):
+            avg_acc=avg_acc+(float(confusion_mat[i,i])/float(sum((confusion_mat[i,:]))))
+
+        avg_acc=avg_acc/float(len(confusion_mat))
+        if(averageAcuracyForBestModel== None or avg_acc>averageAcuracyForBestModel):
+            averageAcuracyForBestModel=avg_acc
+            bestModel=clf
+
+    return {'bestModel':bestModel,'averageAcuracy':averageAcuracyForBestModel}
+
+def create_dataFrame_with_confusion_matrix(real,pred):
+    labels=list(pd.Series(list(real)+list(pred)).unique())
+    confusion_mat=confusion_matrix(real, pred, labels=labels) 
+    
+    df=pd.DataFrame(confusion_mat,columns=[['predito']*len(labels),labels], index=[['real']*len(labels),labels])
+    return df
+
+columns_to_drop=[]
+data_validation=get_data_to_validation(path_to_sqlite)
+if(len(columns_to_drop)>0):
+    data_validation['dataframeX']=data_validation['dataframeX'].drop(columns_to_drop,axis=1)
+return_from_defineBetterModel=defineBetterModel(path_to_sqlite,data_validation,dropColumnsFromDataTrainAndTest=columns_to_drop)
+model=return_from_defineBetterModel['bestModel']
+ypred=model.predict(data_validation['dataframeX'])
+
+confusion_mat=create_dataFrame_with_confusion_matrix(data_validation['Y'],ypred)
+print("Matriz de confusão:")
+confusion_mat
+
+print("Acurácia media: "+str(return_from_defineBetterModel['averageAcuracy']))
+#%%[markdown]
+# Um fato interessante é que as variávies  price, weight e express_delivery parecem não contribuir para
+# na construção modelo, podendo até mesmo atrapalhar na elaboração do mesmo. Tal afirmação pode ser 
+# confirmada nos resultados obtidos pelo modelo a seguir, onde estas variáveis de entrada foram retiradas da criação do mesmo:
+
+#%%
+columns_to_drop=['price', 'express_delivery','weight']
+data_validation=get_data_to_validation(path_to_sqlite)
+if(len(columns_to_drop)>0):
+    data_validation['dataframeX']=data_validation['dataframeX'].drop(columns_to_drop,axis=1)
+return_from_defineBetterModel=defineBetterModel(path_to_sqlite,data_validation,dropColumnsFromDataTrainAndTest=columns_to_drop)
+model=return_from_defineBetterModel['bestModel']
+ypred=model.predict(data_validation['dataframeX'])
+
+confusion_mat=create_dataFrame_with_confusion_matrix(data_validation['Y'],ypred)
+print("Matriz de confusão:")
+confusion_mat
+
+print("Acurácia media: "+str(return_from_defineBetterModel['averageAcuracy']))
+
 #sklearn.tree.DecisionTreeClassifier()
 #sklearn.metrics.confusion_matrix()
+#df.drop(['price', 'express_delivery','weight'], axis=1)
+#a=dict(zip(data_validation['dataframeX'].columns, clf.feature_importances_))
