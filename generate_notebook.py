@@ -65,7 +65,7 @@ def pass_csv_database_to_sqlite3(path_to_sqlite3,path_raw_data_in_csv):
     conn.commit()
     conn.close()
 
-pass_csv_database_to_sqlite3(path_to_sqlite,path_to_database)
+######pass_csv_database_to_sqlite3(path_to_sqlite,path_to_database)
 
 ######load_dataset.create_sqlite_schema()
 
@@ -219,13 +219,13 @@ def word_typed_in_query___query_elo7(path_to_sqlite3):
 #usuarios em consultadas, admitindo que nos modelos que vão ser desenvolvidos as
 #palavras vão ser as variáveis de entrada, estas são as variáveis que primeiro vão ser análisadas.
 #%%
-conn=sqlite3.connect(path_to_sqlite)
-sql="""SELECT COUNT(DISTINCT word)        
-        FROM word_typed_in_query
-        WHERE word NOT IN ({stopwords})
-    """.format(stopwords=str(list(stopwords.words('portuguese')))[1:-1])
-print("Número de palavras distintas já digitadas: "+str(conn.execute(sql).fetchall()[0][0]))
-conn.close()
+######conn=sqlite3.connect(path_to_sqlite)
+######sql="""SELECT COUNT(DISTINCT word)        
+######        FROM word_typed_in_query
+######        WHERE word NOT IN ({stopwords})
+######    """.format(stopwords=str(list(stopwords.words('portuguese')))[1:-1])
+######print("Número de palavras distintas já digitadas: "+str(conn.execute(sql).fetchall()[0][0]))
+######conn.close()
 
 #%%[markdown]
 # Por causa da quantidade de palavras que existem é preciso realizar
@@ -350,7 +350,7 @@ conn.close()
 #%%
 conn=sqlite3.connect(path_to_sqlite)
 
-df=pd.read_sql_query("""SELECT DISTINCT product_id, category, weight FROM query_elo7 WHERE weight<40""",conn)
+#######df=pd.read_sql_query("""SELECT DISTINCT product_id, category, weight FROM query_elo7 WHERE weight<40""",conn)
 
 ####sns.histplot(hue="category", x="weight", data=df,bins=10)
 conn.close()
@@ -406,18 +406,18 @@ conn.close()
 
 #%%
 
-conn=sqlite3.connect(path_to_sqlite)
-df=pd.read_sql_query("""SELECT DISTINCT product_id, category, express_delivery FROM query_elo7 WHERE  price<200 AND category!='Lembrancinhas'  """,conn)
+######conn=sqlite3.connect(path_to_sqlite)
+######df=pd.read_sql_query("""SELECT DISTINCT product_id, category, express_delivery FROM query_elo7 WHERE  price<200 AND category!='Lembrancinhas'  """,conn)
 
 
-df['express_delivery']=df['express_delivery'].apply(lambda x: 'yes' if x>0.0 else 'no')
-categories=df['category'].unique()
-####for category in categories:
-    ####print("Distribuição para a categoria:"+str(category)+"\n")
-    ####dfT=df[df['category']==category]
-    ####sns.histplot( x="express_delivery", data=dfT.sort_values(by=['express_delivery']), stat='probability',discrete=True, shrink=.8)
-    ####plt.show()
-    #####print("\n\n\n\n")
+######df['express_delivery']=df['express_delivery'].apply(lambda x: 'yes' if x>0.0 else 'no')
+######categories=df['category'].unique()
+######for category in categories:
+    ######print("Distribuição para a categoria:"+str(category)+"\n")
+    ######dfT=df[df['category']==category]
+    ######sns.histplot( x="express_delivery", data=dfT.sort_values(by=['express_delivery']), stat='probability',discrete=True, shrink=.8)
+    ######plt.show()
+    ######print("\n\n\n\n")
 
 
 conn.close()
@@ -425,14 +425,6 @@ conn.close()
 # Como pode ser observado existem diferentes distribuições de envio expresso
 # por categoria, isso faz este atributo interessante para usar em um 
 # classificador de categorias.
-
-
-# %%[markdown]
-
-
-
-# %%[markdown]
-### Criação de vetores médios de palavras consultadas para cada categoria .
 
 
 #%%[markdown]
@@ -481,55 +473,7 @@ def populate_table____vector_element(path_to_sqlite3):
 
 
 
-#%% [markdown]
-# A partir dos histogramas criados para os produtos podemos calcular os histogramas médios para as categorias, a seguir o codigo que cria estes histogramas:
-#%%
-def calculate_histogram_of_words_for_categories(path_to_sqlite3):
-    conn = sqlite3.connect(path_to_sqlite3)
-    
-    sql="""
-    WITH histogram_of_words_for_products AS (
-    SELECT  query_elo7.product_id AS product_id,    
-            position_in_vector AS position_in_vector,
-            word AS word,
-            category,
-            SUM(value) AS value_vector
-    FROM vector_element
-    INNER JOIN query_elo7 ON query_elo7.query_elo7_id=vector_element.query_elo7_id
-
-    GROUP BY query_elo7.product_id,position_in_vector,word,category
-    )
-
-
-    SELECT category,position_in_vector,AVG(value_vector) AS value
-    FROM histogram_of_words_for_products
-    GROUP BY category,position_in_vector
-    ORDER BY category,position_in_vector
-    """
-    df=pd.read_sql_query(sql,conn)
-    category_vectors={}
-    for category in df['category'].unique():
-        category_vectors[category]=df[df['category']==category].sort_values(by=['position_in_vector']).values.transpose()[2]
-
-    return category_vectors
-
-
-#%% [markdown]
-# Outra métrica criada a partir dos histogramas é quão parecido o histograma de um produto
-# é do histograma de uma categoria, para saber se dois vetores são parecidos pode-se utilizar
-# o cálculo do angulo entre eles, a seguir o código que faz esse cálculo:
-#%%
-def unit_vector(vector):
-    """ Returns the unit vector of the vector.  """
-    return vector / np.linalg.norm(vector)
-
-def angle_between(v1, v2):
-   
-    v1_u = unit_vector(v1)
-    v2_u = unit_vector(v2)
-    return np.arccos(np.clip(np.dot(v1_u, v2_u), -1.0, 1.0))
-
-####df_histogram_categories=calculate_histogram_of_words_for_categories(path_to_sqlite)
+######df_histogram_categories=calculate_histogram_of_words_for_categories(path_to_sqlite)
 
 #%%[markdown]
 #### Variáveis utilizadas para a criação do sistema
@@ -737,40 +681,188 @@ def create_dataFrame_with_confusion_matrix(real,pred):
     df=pd.DataFrame(confusion_mat,columns=[['predito']*len(labels),labels], index=[['real']*len(labels),labels])
     return df
 
-columns_to_drop=[]
-data_validation=get_data_to_validation(path_to_sqlite)
-if(len(columns_to_drop)>0):
-    data_validation['dataframeX']=data_validation['dataframeX'].drop(columns_to_drop,axis=1)
-return_from_defineBetterModel=defineBetterModel(path_to_sqlite,data_validation,dropColumnsFromDataTrainAndTest=columns_to_drop)
-model=return_from_defineBetterModel['bestModel']
-ypred=model.predict(data_validation['dataframeX'])
+#####columns_to_drop=[]
+#####data_validation=get_data_to_validation(path_to_sqlite)
+#####if(len(columns_to_drop)>0):
+#####    data_validation['dataframeX']=data_validation['dataframeX'].drop(columns_to_drop,axis=1)
+#####return_from_defineBetterModel=defineBetterModel(path_to_sqlite,data_validation,dropColumnsFromDataTrainAndTest=columns_to_drop)
+#####model=return_from_defineBetterModel['bestModel']
+#####ypred=model.predict(data_validation['dataframeX'])
 
-confusion_mat=create_dataFrame_with_confusion_matrix(data_validation['Y'],ypred)
-print("Matriz de confusão:")
-confusion_mat
+#####confusion_mat=create_dataFrame_with_confusion_matrix(data_validation['Y'],ypred)
+#####print("Matriz de confusão:")
+#####confusion_mat
 
-print("Acurácia media: "+str(return_from_defineBetterModel['averageAcuracy']))
+#####print("Acurácia media: "+str(return_from_defineBetterModel['averageAcuracy']))
 #%%[markdown]
 # Um fato interessante é que as variávies  price, weight e express_delivery parecem não contribuir para
 # na construção modelo, podendo até mesmo atrapalhar na elaboração do mesmo. Tal afirmação pode ser 
 # confirmada nos resultados obtidos pelo modelo a seguir, onde estas variáveis de entrada foram retiradas da criação do mesmo:
 
 #%%
-columns_to_drop=['price', 'express_delivery','weight']
-data_validation=get_data_to_validation(path_to_sqlite)
-if(len(columns_to_drop)>0):
-    data_validation['dataframeX']=data_validation['dataframeX'].drop(columns_to_drop,axis=1)
-return_from_defineBetterModel=defineBetterModel(path_to_sqlite,data_validation,dropColumnsFromDataTrainAndTest=columns_to_drop)
-model=return_from_defineBetterModel['bestModel']
-ypred=model.predict(data_validation['dataframeX'])
+#####columns_to_drop=['price', 'express_delivery','weight']
+#####data_validation=get_data_to_validation(path_to_sqlite)
+#####if(len(columns_to_drop)>0):
+#####    data_validation['dataframeX']=data_validation['dataframeX'].drop(columns_to_drop,axis=1)
+#####return_from_defineBetterModel=defineBetterModel(path_to_sqlite,data_validation,dropColumnsFromDataTrainAndTest=columns_to_drop)
+#####model=return_from_defineBetterModel['bestModel']
+#####ypred=model.predict(data_validation['dataframeX'])
 
-confusion_mat=create_dataFrame_with_confusion_matrix(data_validation['Y'],ypred)
-print("Matriz de confusão:")
-confusion_mat
+#####confusion_mat=create_dataFrame_with_confusion_matrix(data_validation['Y'],ypred)
+#####print("Matriz de confusão:")
+#####confusion_mat
 
-print("Acurácia media: "+str(return_from_defineBetterModel['averageAcuracy']))
+#####print("Acurácia media: "+str(return_from_defineBetterModel['averageAcuracy']))
 
-#sklearn.tree.DecisionTreeClassifier()
-#sklearn.metrics.confusion_matrix()
-#df.drop(['price', 'express_delivery','weight'], axis=1)
-#a=dict(zip(data_validation['dataframeX'].columns, clf.feature_importances_))
+
+#%%[markdown]
+## Sistema de termos de busca
+# Para esta tarefa vai ser utilizado os histogramas das palavras digitadas nas consultas contudo e 
+# os principais algoritmos nessa tarefa vão ser a PCA e o K-médias. Ambos funcionam melhor se tiverem,
+# que lidar com apenas algumas dezenas de variaveis, ao invés de centenas, por isso as metricas 
+# utilizadas nessa seção vão ser derivadas  de operações entre os histogramas das consultas com os
+# histogramas médios das palavras por categoria. O histogra médio de palavras por categoria pode ser 
+# montado aplicando a média sobre todos os histogramas dos produtos divididos por categoria.
+#
+# As operações entre os histogramas que vão utilizas vão ser a o angulo entre vetores e a distância 
+# entre vetores. A seguir o código que gera as metricas descritas.
+
+#%%
+def unit_vector(vector):
+    """ Returns the unit vector of the vector.  """
+    return vector / np.linalg.norm(vector)
+
+def angle_between(v1, v2):
+   
+    v1_u = unit_vector(v1)
+    v2_u = unit_vector(v2)
+    return np.arccos(np.clip(np.dot(v1_u, v2_u), -1.0, 1.0))
+
+def calculate_histogram_of_words_for_categories(path_to_sqlite3):
+    conn = sqlite3.connect(path_to_sqlite3)
+    
+    sql="""
+    
+    WITH vector_products AS (
+        SELECT query_elo7.product_id,
+            vector_element.position_in_vector,
+            query_elo7.category,
+            SUM(vector_element.value) AS value    
+            FROM vector_element
+        INNER JOIN query_elo7 ON query_elo7.query_elo7_id=vector_element.query_elo7_id        
+  
+        GROUP BY query_elo7.product_id,vector_element.position_in_vector,query_elo7.category
+        ORDER BY query_elo7.product_id,vector_element.position_in_vector,query_elo7.category
+    )  
+    
+    SELECT category, 
+           position_in_vector,
+           AVG(value) AS value
+    FROM vector_products    
+    GROUP BY category,position_in_vector
+    ORDER BY category,position_in_vector        
+    """
+    df=pd.read_sql_query(sql,conn)
+    category_vectors={}
+    for category in df['category'].unique():
+        category_vectors[category]=df[df['category']==category].sort_values(by=['position_in_vector']).values.transpose()[2]
+
+    return category_vectors
+
+def compute_angle_from_categories_hist_and_distance_from_categories_hist_for_query_hist(query_info,category_vectors):
+    categories_names=list(category_vectors.keys())
+    categories_names.sort()
+    correlations=[]
+    angles=[]
+    for category_name in categories_names:
+        correlations.append(np.corrcoef(np.array([category_vectors[category_name],query_info['histogram']],dtype=float))[0,1])
+        angles.append(angle_between(category_vectors[category_name],query_info['histogram']))
+    return {'correlations':correlations,'angles':angles}
+
+
+
+def get_histograms_for_querys(path_to_sqlite3):
+    querys_info={}
+
+    sql='''
+    WITH TEMP1 AS(
+            SELECT vector_element.query_elo7_id ,
+            vector_element.position_in_vector,
+            AVG(vector_element.value) AS value    
+            FROM vector_element       
+  
+        GROUP BY vector_element.query_elo7_id,vector_element.position_in_vector
+        ORDER BY vector_element.query_elo7_id,vector_element.position_in_vector
+    )
+    SELECT query_elo7_id,
+           position_in_vector,
+           value
+    FROM TEMP1
+    WHERE value>0
+    ORDER BY query_elo7_id,position_in_vector
+    '''
+    conn = sqlite3.connect(path_to_sqlite3)
+    cur=conn.cursor()
+    cur.execute("""
+        SELECT  query_elo7_id,   
+                price,
+                weight,
+                express_delivery,
+                minimum_quantity,
+                view_counts
+      
+        FROM query_elo7;
+    """)
+    
+    for row in cur:
+        querys_info[row[0]]={'price':row[1],'weigth':row[2],'express_delivery':row[3],'minimum_quantity':row[4],'view_counts':row[5],'histogram':np.zeros(384),'correlation_from_categories':[], 'angle_from_categories':[]}
+    
+    cur.execute(sql)
+    for row in cur:
+        querys_info[row[0]]['histogram'][row[1]]=row[2]
+
+    conn.close()
+    
+    category_vectors=calculate_histogram_of_words_for_categories(path_to_sqlite3)
+    for query_key in querys_info:
+        query_info=querys_info[query_key]
+
+        
+        angles_and_correlations_for_query=compute_angle_from_categories_hist_and_distance_from_categories_hist_for_query_hist(query_info,category_vectors)
+        query_info['correlation_from_categories']=angles_and_correlations_for_query['correlations']
+        query_info['angle_from_categories']=angles_and_correlations_for_query['angles']
+
+    return querys_info
+
+def create_dataframe_for_angles_from_categories_and_some_columns_from_table_query_elo7(querys_info):
+    data_frame_in_dict={'price':[],'weigth':[],'express_delivery':[],'minimum_quantity':[]}
+    numberOfCorrelations=len(querys_info[list(querys_info.keys())[0]]['correlation_from_categories'])
+    for i in range(numberOfCorrelations):
+        data_frame_in_dict['angle_'+str(i)]=[]
+
+    for key_query in querys_info:
+        query=querys_info[key_query]
+        for i in range(len(query['angle_from_categories'])):
+            angle_from_category=query['angle_from_categories'][i]
+            data_frame_in_dict['angle_'+str(i)].append(angle_from_category)
+        
+        data_frame_in_dict['price'].append(query['price'])
+        data_frame_in_dict['weigth'].append(query['weigth'])
+        data_frame_in_dict['express_delivery'].append(query['express_delivery'])
+        data_frame_in_dict['minimum_quantity'].append(query['minimum_quantity'])
+    return pd.DataFrame.from_dict(data_frame_in_dict)
+
+querys_info=get_histograms_for_querys(path_to_sqlite)
+df=create_dataframe_for_angles_from_categories_and_some_columns_from_table_query_elo7(querys_info)
+print('hello')
+#https://towardsdatascience.com/pca-using-python-scikit-learn-e653f8989e60
+#%% [markdown]
+# Outra métrica criada a partir dos histogramas é quão parecido o histograma de um produto
+# é do histograma de uma categoria, para saber se dois vetores são parecidos pode-se utilizar
+# o cálculo do angulo entre eles, a seguir o código que faz esse cálculo:
+#%%
+
+
+
+histogram_categories=calculate_histogram_of_words_for_categories(path_to_sqlite)
+
