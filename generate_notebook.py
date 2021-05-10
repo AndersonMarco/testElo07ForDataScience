@@ -481,7 +481,7 @@ populate_table____vector_element(path_to_sqlite)
 
 
 
-df_histogram_categories=calculate_histogram_of_words_for_categories(path_to_sqlite)
+
 
 #%%[markdown]
 #### Variáveis utilizadas para a criação do sistema
@@ -850,7 +850,7 @@ df=pd.read_sql_query("""SELECT  price_group,
 #%%
 
 
-def get_data_to_validation_to_use_in_the_model_to_predict_categories(path_to_sqlite3):
+def get_data_to_validation_to_use_in_the_model_to_predict_price(path_to_sqlite3):
     query_to_get_words_histograms="""
     WITH vector_query AS (
         SELECT query_elo7.query_elo7_id,
@@ -972,7 +972,7 @@ def define_better_model_to_predict_price_from_text_in_query(path_to_sqlite,data_
     return {'bestModel':bestModel,'averageAcuracy':averageAcuracyForBestModel}
 
 
-data_validation=get_data_to_validation_to_use_in_the_model_to_predict_categories(path_to_sqlite)
+data_validation=get_data_to_validation_to_use_in_the_model_to_predict_price(path_to_sqlite)
 return_from_defineBetterModel=define_better_model_to_predict_price_from_text_in_query(path_to_sqlite,data_validation)
 model=return_from_defineBetterModel['bestModel']
 ypred=model.predict(data_validation['dataframeX'])
