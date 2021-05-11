@@ -15,7 +15,6 @@ path_to_sqlite='/dev/shm/database.sqlite3' #Store the database in ram partition 
 #análises porque o SQLITE é uma linguagem de consulta de dados que permite
 #facíl manipulação dos dados.
 #%%
-import src.data.load_data_to_sqlite_dataset as load_dataset
 import pandas as pd
 import sqlite3
 import matplotlib.pyplot as plt
@@ -32,6 +31,7 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.decomposition import PCA
 from sklearn.cluster import KMeans
 from sklearn.metrics import silhouette_samples, silhouette_score
+from IPython.display import display
 
 nltk.download('punkt')
 nltk.download('stopwords')
@@ -761,7 +761,7 @@ ypred=model.predict(data_validation['dataframeX'])
 
 confusion_mat=create_dataFrame_with_confusion_matrix(data_validation['Y'],ypred)
 print("Matriz de confusão:")
-confusion_mat
+display(confusion_mat)
 
 print("Acurácia media: "+str(return_from_defineBetterModel['averageAcuracy']))
 
@@ -807,7 +807,7 @@ for i in [2,3,5,8,13,21]:
 def update_column_price_group_with_groups_found_in_kmeans_for_price(path_to_sqlite):
     conn = sqlite3.connect(path_to_sqlite)
     
-    model=create_discretization_model_from_k_means_for_product_price(path_to_sqlite,5)['model']
+    model=create_discretization_model_from_k_means_for_product_price(path_to_sqlite,13)['model']
     df=pd.read_sql_query("SELECT query_elo7_id,price FROM query_elo7;",conn)
     df['price_group']=df['price'].apply(lambda x: model.predict([[x]])[0])
     cur=conn.cursor()
@@ -815,7 +815,7 @@ def update_column_price_group_with_groups_found_in_kmeans_for_price(path_to_sqli
     for index, row in df.iterrows():
         cur.execute("UPDATE query_elo7 SET price_group={group} WHERE query_elo7_id={query_elo7_id}".format(group=row['price_group'],query_elo7_id=row['query_elo7_id']))
         progress=progress+1
-        print(progress)
+
     conn.commit()
     conn.close()
 
@@ -981,7 +981,7 @@ confusion_mat=create_dataFrame_with_confusion_matrix(data_validation['Y'],ypred)
 # A seguir a matriz de confusão é a acuracia média que o modelo conseguiu para diferentes
 # grupos de preço:
 #%%
-confusion_mat
+display(confusion_mat)
 print("Acurácia media: "+str(return_from_defineBetterModel['averageAcuracy']))
 
 #%%[markdown]
