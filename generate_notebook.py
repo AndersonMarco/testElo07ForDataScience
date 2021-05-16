@@ -32,9 +32,10 @@ from sklearn.decomposition import PCA
 from sklearn.cluster import KMeans
 from sklearn.metrics import silhouette_samples, silhouette_score
 from IPython.display import display
+from sklearn import linear_model
 
-nltk.download('punkt')
-nltk.download('stopwords')
+#########nltk.download('punkt')
+#########nltk.download('stopwords')
 #%%
 def xorshift32(x):    
     for i in range(16):
@@ -70,7 +71,7 @@ def pass_csv_database_to_sqlite3(path_to_sqlite3,path_raw_data_in_csv):
     conn.commit()
     conn.close()
 
-pass_csv_database_to_sqlite3(path_to_sqlite,path_to_database)
+#########pass_csv_database_to_sqlite3(path_to_sqlite,path_to_database)
 
 
 #%%[markdown]
@@ -208,11 +209,11 @@ def word_typed_in_query___query_elo7(path_to_sqlite3):
     conn.close()
 
 
-create_schema_for_tables_that_associate_words_in_querys_with_querys_typed(path_to_sqlite)
-populate_table__word_typed_in_query(path_to_sqlite)
-create_schema_for_table___word_typed_in_query___query_elo7(path_to_sqlite)
-word_typed_in_query___query_elo7(path_to_sqlite)
-create_schema_for_table___vector_element(path_to_sqlite)
+#########create_schema_for_tables_that_associate_words_in_querys_with_querys_typed(path_to_sqlite)
+#########populate_table__word_typed_in_query(path_to_sqlite)
+#########create_schema_for_table___word_typed_in_query___query_elo7(path_to_sqlite)
+#########word_typed_in_query___query_elo7(path_to_sqlite)
+#########create_schema_for_table___vector_element(path_to_sqlite)
 
 
 #%%[markdown]
@@ -223,13 +224,13 @@ create_schema_for_table___vector_element(path_to_sqlite)
 #usuários em consultadas, admitindo que nos modelos que vão ser desenvolvidos as
 #palavras vão ser as variáveis de entrada, estas são as variáveis que primeiro vão ser análisadas.
 #%%
-conn=sqlite3.connect(path_to_sqlite)
-sql="""SELECT COUNT(DISTINCT word)        
-        FROM word_typed_in_query
-        WHERE word NOT IN ({stopwords})
-    """.format(stopwords=str(list(stopwords.words('portuguese')))[1:-1])
-print("Número de palavras distintas já digitadas: "+str(conn.execute(sql).fetchall()[0][0]))
-conn.close()
+#########conn=sqlite3.connect(path_to_sqlite)
+#########sql="""SELECT COUNT(DISTINCT word)        
+#########        FROM word_typed_in_query
+#########        WHERE word NOT IN ({stopwords})
+#########    """.format(stopwords=str(list(stopwords.words('portuguese')))[1:-1])
+#########print("Número de palavras distintas já digitadas: "+str(conn.execute(sql).fetchall()[0][0]))
+#########conn.close()
 
 #%%[markdown]
 # Por causa da quantidade de palavras que existem é preciso realizar
@@ -263,9 +264,9 @@ def count_number_of_times_that_word_appear_in_query(path_to_sqlite3):
     conn.close()
     return df
 
-print("Análise de frequência das vinte palavras mais digitadas nas consultas:")
-df_number_of_times_for_words_in_querys=count_number_of_times_that_word_appear_in_query(path_to_sqlite)
-df_number_of_times_for_words_in_querys.head(20)
+#########print("Análise de frequência das vinte palavras mais digitadas nas consultas:")
+#########df_number_of_times_for_words_in_querys=count_number_of_times_that_word_appear_in_query(path_to_sqlite)
+#########df_number_of_times_for_words_in_querys.head(20)
 # %%[markdown]
 # Pode-se notar um decaimento exponencial (muito rápido) na 
 # frequencia da palavra mais digitada para vigesima mais digitada. <br>
@@ -275,10 +276,10 @@ df_number_of_times_for_words_in_querys.head(20)
 # vezes que ela aparece.
 
 # %%
-df_number_of_times_for_words_in_querys=count_number_of_times_that_word_appear_in_query(path_to_sqlite)
-df_number_of_times_for_words_in_querys=df_number_of_times_for_words_in_querys.reset_index()
-df_number_of_times_for_words_in_querys.rename(columns = {'index':'ranking da palavra', 'numbero_de_consultas_onde_a_palavra_foi_digitada':'número de vezes que aparece'}, inplace = True)
-sns.lineplot(data=df_number_of_times_for_words_in_querys.reset_index(), x="ranking da palavra", y="número de vezes que aparece")
+#########df_number_of_times_for_words_in_querys=count_number_of_times_that_word_appear_in_query(path_to_sqlite)
+#########df_number_of_times_for_words_in_querys=df_number_of_times_for_words_in_querys.reset_index()
+#########df_number_of_times_for_words_in_querys.rename(columns = {'index':'ranking da palavra', 'numbero_de_consultas_onde_a_palavra_foi_digitada':'número de vezes que aparece'}, inplace = True)
+#########sns.lineplot(data=df_number_of_times_for_words_in_querys.reset_index(), x="ranking da palavra", y="número de vezes que aparece")
 
 # %% [markdown]
 # Com as análises apresentadas até agora pode-se dizer que com poucas
@@ -315,12 +316,12 @@ def number_of_queries_coverage_by_groups_with_the_N_most_frequent_words(path_to_
 
     return pd.DataFrame.from_dict(prototype_for_dataframe_with_result)
 
-df_with_number_of_queries_coverage_by_groups_with_the_N_most_frequent_words=number_of_queries_coverage_by_groups_with_the_N_most_frequent_words(path_to_sqlite,path_to_database)
-sns.lineplot(data=df_with_number_of_queries_coverage_by_groups_with_the_N_most_frequent_words, x="grupo com as N palavras mais frequentes", y="número de consultas cobertas pelo grupo")
+#########df_with_number_of_queries_coverage_by_groups_with_the_N_most_frequent_words=number_of_queries_coverage_by_groups_with_the_N_most_frequent_words(path_to_sqlite,path_to_database)
+#########sns.lineplot(data=df_with_number_of_queries_coverage_by_groups_with_the_N_most_frequent_words, x="grupo com as N palavras mais frequentes", y="número de consultas cobertas pelo grupo")
 
 # %%
-last_row_for_infomation_about_group_of_words=(df_with_number_of_queries_coverage_by_groups_with_the_N_most_frequent_words.values)[-1]
-print ("Quantidade consultas cobertas pelo grupo com as {num_of_words} palavras mais frequentes: {num_of_querys}".format(num_of_words=last_row_for_infomation_about_group_of_words[0],num_of_querys=last_row_for_infomation_about_group_of_words[1]))
+#########last_row_for_infomation_about_group_of_words=(df_with_number_of_queries_coverage_by_groups_with_the_N_most_frequent_words.values)[-1]
+#########print ("Quantidade consultas cobertas pelo grupo com as {num_of_words} palavras mais frequentes: {num_of_querys}".format(num_of_words=last_row_for_infomation_about_group_of_words[0],num_of_querys=last_row_for_infomation_about_group_of_words[1]))
 
 
 
@@ -344,21 +345,21 @@ print ("Quantidade consultas cobertas pelo grupo com as {num_of_words} palavras 
 # %%[markdown]
 # Histogramas com a distribuição de peso por categoria.
 #%%
-conn=sqlite3.connect(path_to_sqlite)
+#########conn=sqlite3.connect(path_to_sqlite)
 
-df=pd.read_sql_query("""SELECT DISTINCT product_id, category, weight FROM query_elo7 WHERE weight""",conn)
-sns.histplot(hue="category", x="weight", data=df,bins=10)
-conn.close()
+#########df=pd.read_sql_query("""SELECT DISTINCT product_id, category, weight FROM query_elo7 WHERE weight""",conn)
+#########sns.histplot(hue="category", x="weight", data=df,bins=10)
+#########conn.close()
 # %%
 # %%[markdown]
 # Histogramas com a distribuição de peso por categoria com limite de peso de até 40, isso é equivalente a um zoom no inicio no eixo X dos histogramas do gráfico anterior.
 #%%
-conn=sqlite3.connect(path_to_sqlite)
+#########conn=sqlite3.connect(path_to_sqlite)
 
-df=pd.read_sql_query("""SELECT DISTINCT product_id, category, weight FROM query_elo7 WHERE weight<40""",conn)
+#########df=pd.read_sql_query("""SELECT DISTINCT product_id, category, weight FROM query_elo7 WHERE weight<40""",conn)
 
-sns.histplot(hue="category", x="weight", data=df,bins=10)
-conn.close()
+#########sns.histplot(hue="category", x="weight", data=df,bins=10)
+#########conn.close()
 
 
 # %%[markdown]
@@ -366,21 +367,21 @@ conn.close()
 # %%[markdown]
 # Histogramas com a distribuição de preço por categoria.
 #%%
-conn=sqlite3.connect(path_to_sqlite)
+#########conn=sqlite3.connect(path_to_sqlite)
 
-df=pd.read_sql_query("""SELECT DISTINCT product_id, category, price FROM query_elo7 WHERE price""",conn)
-sns.histplot(hue="category", x="price", data=df,bins=10)
-conn.close()
+#########df=pd.read_sql_query("""SELECT DISTINCT product_id, category, price FROM query_elo7 WHERE price""",conn)
+#########sns.histplot(hue="category", x="price", data=df,bins=10)
+#########conn.close()
 
 # %%[markdown]
 # Histogramas com a distribuição de peso por categoria com limite de preço de até 100, isso é equivalente a um zoom no inicio do eixo X dos histogramas do gráfico anterior.
 #%%
-conn=sqlite3.connect(path_to_sqlite)
+#########conn=sqlite3.connect(path_to_sqlite)
 
-df=pd.read_sql_query("""SELECT DISTINCT product_id, category, price FROM query_elo7 WHERE price<200  """,conn)
+#########df=pd.read_sql_query("""SELECT DISTINCT product_id, category, price FROM query_elo7 WHERE price<200  """,conn)
 #ax = sns.boxplot(x="category", y="weight", data=df)
-sns.histplot(hue="category", x="price", data=df,bins=10)
-conn.close()
+#########sns.histplot(hue="category", x="price", data=df,bins=10)
+#########conn.close()
 
 
 # %%[markdown]
@@ -390,12 +391,12 @@ conn.close()
 # anterior porem sem a categoria "Lembrancinhas":
 
 #%%
-conn=sqlite3.connect(path_to_sqlite)
+#########conn=sqlite3.connect(path_to_sqlite)
 
-df=pd.read_sql_query("""SELECT DISTINCT product_id, category, price FROM query_elo7 WHERE  price<200 AND category!='Lembrancinhas'  """,conn)
+#########df=pd.read_sql_query("""SELECT DISTINCT product_id, category, price FROM query_elo7 WHERE  price<200 AND category!='Lembrancinhas'  """,conn)
 #ax = sns.boxplot(x="category", y="weight", data=df)
-sns.histplot(hue="category", x="price", data=df,bins=10)
-conn.close()
+#########sns.histplot(hue="category", x="price", data=df,bins=10)
+#########conn.close()
 
 
 # %%[markdown]
@@ -414,21 +415,21 @@ conn.close()
 
 #%%
 
-conn=sqlite3.connect(path_to_sqlite)
-df=pd.read_sql_query("""SELECT DISTINCT product_id, category, express_delivery FROM query_elo7 WHERE  price<200 AND category!='Lembrancinhas'  """,conn)
+#########conn=sqlite3.connect(path_to_sqlite)
+#########df=pd.read_sql_query("""SELECT DISTINCT product_id, category, express_delivery FROM query_elo7 WHERE  price<200 AND category!='Lembrancinhas'  """,conn)
 
 
-df['express_delivery']=df['express_delivery'].apply(lambda x: 'yes' if x>0.0 else 'no')
-categories=df['category'].unique()
-for category in categories:
-    print("Distribuição para a categoria:"+str(category)+"\n")
-    dfT=df[df['category']==category]
-    sns.histplot( x="express_delivery", data=dfT.sort_values(by=['express_delivery']), stat='probability',discrete=True, shrink=.8)
-    plt.show()
-    print("\n\n\n\n")
+#########df['express_delivery']=df['express_delivery'].apply(lambda x: 'yes' if x>0.0 else 'no')
+#########categories=df['category'].unique()
+#########for category in categories:
+#########    print("Distribuição para a categoria:"+str(category)+"\n")
+#########    dfT=df[df['category']==category]
+#########    sns.histplot( x="express_delivery", data=dfT.sort_values(by=['express_delivery']), stat='probability',discrete=True, shrink=.8)
+#########    plt.show()
+#########    print("\n\n\n\n")
 
 
-conn.close()
+#########conn.close()
 # %%[markdown]
 # Como pode ser observado existem diferentes distribuições de envio expresso
 # por categoria, isso faz este atributo interessante para usar em um 
@@ -477,7 +478,7 @@ def populate_table____vector_element(path_to_sqlite3):
         conn.commit()
     conn.close()
 
-populate_table____vector_element(path_to_sqlite)
+#########populate_table____vector_element(path_to_sqlite)
 
 
 
@@ -725,45 +726,48 @@ def define_better_model_to_predict_categories(path_to_sqlite,data_validation,dro
 
     return {'bestModel':bestModel,'averageAcuracy':averageAcuracyForBestModel}
 
-def create_dataFrame_with_confusion_matrix(real,pred):
-    labels=list(pd.Series(list(real)+list(pred)).unique())
+def create_dataFrame_with_confusion_matrix(real,pred, labels_arg=None):
+    if(labels_arg==None):
+        labels=list(pd.Series(list(real)+list(pred)).unique())
+    else:
+        labels=labels_arg
     confusion_mat=confusion_matrix(real, pred, labels=labels) 
     
     df=pd.DataFrame(confusion_mat,columns=[['predito']*len(labels),labels], index=[['real']*len(labels),labels])
     return df
 
-columns_to_drop=[]
-data_validation=get_data_to_validation_to_use_in_the_model_to_predict_categories(path_to_sqlite)
-if(len(columns_to_drop)>0):
-    data_validation['dataframeX']=data_validation['dataframeX'].drop(columns_to_drop,axis=1)
-return_from_defineBetterModel=define_better_model_to_predict_categories(path_to_sqlite,data_validation,dropColumnsFromDataTrainAndTest=columns_to_drop)
-model=return_from_defineBetterModel['bestModel']
-ypred=model.predict(data_validation['dataframeX'])
+#########columns_to_drop=[]
+#########data_validation=get_data_to_validation_to_use_in_the_model_to_predict_categories(path_to_sqlite)
+#########if(len(columns_to_drop)>0):
+#########    data_validation['dataframeX']=data_validation['dataframeX'].drop(columns_to_drop,axis=1)
+#########return_from_defineBetterModel=define_better_model_to_predict_categories(path_to_sqlite,data_validation,dropColumnsFromDataTrainAndTest=columns_to_drop)
+#########model=return_from_defineBetterModel['bestModel']
+#########ypred=model.predict(data_validation['dataframeX'])
 
-confusion_mat=create_dataFrame_with_confusion_matrix(data_validation['Y'],ypred)
-print("Matriz de confusão:")
-confusion_mat
+#########confusion_mat_0=create_dataFrame_with_confusion_matrix(data_validation['Y'],ypred)
+#########print("Matriz de confusão para classificar produtos:")
+#########display(confusion_mat_0)
 
-print("Acurácia media: "+str(return_from_defineBetterModel['averageAcuracy']))
+#########print("Acurácia media: "+str(return_from_defineBetterModel['averageAcuracy']))
 #%%[markdown]
 # Um fato interessante é que as variávies  price, weight e express_delivery parecem não contribuir para
 # na construção modelo, podendo até mesmo atrapalhar na elaboração do mesmo. Tal afirmação pode ser 
 # confirmada nos resultados obtidos pelo modelo a seguir, onde estas variáveis de entrada foram retiradas da criação do mesmo:
 
 #%%
-columns_to_drop=['price', 'express_delivery','weight']
-data_validation=get_data_to_validation_to_use_in_the_model_to_predict_categories(path_to_sqlite)
-if(len(columns_to_drop)>0):
-    data_validation['dataframeX']=data_validation['dataframeX'].drop(columns_to_drop,axis=1)
-return_from_defineBetterModel=define_better_model_to_predict_categories(path_to_sqlite,data_validation,dropColumnsFromDataTrainAndTest=columns_to_drop)
-model=return_from_defineBetterModel['bestModel']
-ypred=model.predict(data_validation['dataframeX'])
+#########columns_to_drop=['price', 'express_delivery','weight']
+#########data_validation=get_data_to_validation_to_use_in_the_model_to_predict_categories(path_to_sqlite)
+#########if(len(columns_to_drop)>0):
+#########    data_validation['dataframeX']=data_validation['dataframeX'].drop(columns_to_drop,axis=1)
+#########return_from_defineBetterModel=define_better_model_to_predict_categories(path_to_sqlite,data_validation,dropColumnsFromDataTrainAndTest=columns_to_drop)
+#########model=return_from_defineBetterModel['bestModel']
+#########ypred=model.predict(data_validation['dataframeX'])
 
-confusion_mat=create_dataFrame_with_confusion_matrix(data_validation['Y'],ypred)
-print("Matriz de confusão:")
-display(confusion_mat)
+#########confusion_mat_1=create_dataFrame_with_confusion_matrix(data_validation['Y'],ypred)
+#########print("Matriz de confusão para classificar produtos apenas com os histogramas:")
+#########display(confusion_mat_1)
 
-print("Acurácia media: "+str(return_from_defineBetterModel['averageAcuracy']))
+#########print("Acurácia media: "+str(return_from_defineBetterModel['averageAcuracy']))
 
 
 #%%[markdown]
@@ -772,7 +776,9 @@ print("Acurácia media: "+str(return_from_defineBetterModel['averageAcuracy']))
 # Para criar este sistema foi primeiro pensado na ideia de criar grupos de preço e 
 # a partir destes grupos utilizar um algoritmo de  aprendizado de maquina que 
 # encontre uma relação entre os histogramas de palavras das consultas
-# com um determinado grupo de preço. <br> <br>
+# com um determinado grupo de preço. É importante observar  que o preço
+# utilizado não foi o bruto mas sim o preço bruto multiplicado pela quantidade minima do produto, 
+# no caso da quantidade mínima ser zero ou não exister se assume que ela é igual a 1. <br> <br>
 # Para a criação dos grupo de preço foi  utilizado o algoritmo K-médias.  A seguir
 # o código que divide os preços em grupos:
 
@@ -781,14 +787,16 @@ print("Acurácia media: "+str(return_from_defineBetterModel['averageAcuracy']))
 def create_discretization_model_from_k_means_for_product_price(path_to_sqlite3,n_clusters):
     conn = sqlite3.connect(path_to_sqlite3)
     sql="""
-    SELECT query_elo7_id, price 
+    SELECT query_elo7_id, price, minimum_quantity
     FROM query_elo7;
     """
     df=pd.read_sql_query(sql,conn)
-    
     clusterer = KMeans(n_clusters=n_clusters, random_state=10)
-    cluster_labels = clusterer.fit_predict(df['price'].values.reshape(-1, 1) )
-    silhouette_avg = silhouette_score(df['price'].values.reshape(-1, 1), cluster_labels)
+
+    df['price_log']=df['price'].apply(np.log)
+    #df['price_log']=df['price']
+    cluster_labels = clusterer.fit_predict(df['price_log'].values.reshape(-1, 1) )
+    silhouette_avg = silhouette_score(df['price_log'].values.reshape(-1, 1), cluster_labels)
     conn.close()
     return {"model":clusterer,'score':silhouette_avg}
 
@@ -799,17 +807,18 @@ def create_discretization_model_from_k_means_for_product_price(path_to_sqlite3,n
 
 #%%
 
-for i in [2,3,5,8,13,21]:
-    score=create_discretization_model_from_k_means_for_product_price(path_to_sqlite,i)['score']
-    print('Discretizando price para {i} valores distintos o valor da silueta média é {resu}.'.format(i=i,resu=score))
+#########for i in [2,3,5,8,13,21]:
+#########    score=create_discretization_model_from_k_means_for_product_price(path_to_sqlite,i)['score']
+#########    print('Discretizando price para {i} valores distintos o valor da silueta média é {resu}.'.format(i=i,resu=score))
 
 #Use Kmeans with 13 clusters to discretize price==============================
 def update_column_price_group_with_groups_found_in_kmeans_for_price(path_to_sqlite):
     conn = sqlite3.connect(path_to_sqlite)
     
-    model=create_discretization_model_from_k_means_for_product_price(path_to_sqlite,13)['model']
-    df=pd.read_sql_query("SELECT query_elo7_id,price FROM query_elo7;",conn)
-    df['price_group']=df['price'].apply(lambda x: model.predict([[x]])[0])
+    model=create_discretization_model_from_k_means_for_product_price(path_to_sqlite,8)['model']
+    df=pd.read_sql_query("SELECT query_elo7_id,price, minimum_quantity FROM query_elo7;",conn)
+    df['price_log']=df['price'].apply(np.log)    
+    df['price_group']=df['price_log'].apply(lambda x: model.predict([[x]])[0])
     cur=conn.cursor()
     progress=0
     for index, row in df.iterrows():
@@ -820,7 +829,7 @@ def update_column_price_group_with_groups_found_in_kmeans_for_price(path_to_sqli
     conn.close()
 
 
-update_column_price_group_with_groups_found_in_kmeans_for_price(path_to_sqlite)
+#########update_column_price_group_with_groups_found_in_kmeans_for_price(path_to_sqlite)
 #end===========================================================================
 
 
@@ -829,15 +838,16 @@ update_column_price_group_with_groups_found_in_kmeans_for_price(path_to_sqlite)
 #para o metódo da silueta. A seguir um dataframe com os valores mínimo e máximo que cada um dos 13
 #grupos da variável price apresenta:
 
-conn=sqlite3.connect(path_to_sqlite)
-df=pd.read_sql_query("""SELECT  price_group,
-                                MIN(price),
-                                MAX(price)
-                        FROM query_elo7
-                        GROUP BY price_group
-                        ORDER BY MIN(price),MAX(price)
-                        """,conn)
-
+#########conn=sqlite3.connect(path_to_sqlite)
+#########df=pd.read_sql_query("""SELECT  price_group,
+#########                                MIN(price),
+#########                                MAX(price)
+#########                        FROM query_elo7
+#########                        GROUP BY price_group
+#########                        ORDER BY MIN(price),MAX(price)
+#########                        """,conn)
+#########conn.close()
+#########display(df)
 
 
 
@@ -879,6 +889,39 @@ def get_data_to_validation_to_use_in_the_model_to_predict_price(path_to_sqlite3)
 
     products_dict_validation=merge_query_to_get_words_histograms_and_query_to_get_varied_information_into_dictonaries(path_to_sqlite3,query_to_get_words_histograms,query_to_get_varied_information)
     return transform_products_load_as_dict_to_dataframeX_variable_to_fit_Y(products_dict_validation, column_to_be_y='price_group')
+
+
+def get_data_to_validation_to_use_in_the_model_to_regress_price(path_to_sqlite3):
+    query_to_get_words_histograms="""
+    WITH vector_query AS (
+        SELECT query_elo7.query_elo7_id,
+            vector_element.position_in_vector,       
+            SUM(vector_element.value) AS value    
+            FROM vector_element
+        INNER JOIN query_elo7 ON query_elo7.query_elo7_id=vector_element.query_elo7_id
+        WHERE query_elo7.hash_for_query_elo7_id>=15
+  
+        GROUP BY query_elo7.query_elo7_id,vector_element.position_in_vector
+        ORDER BY query_elo7.query_elo7_id,vector_element.position_in_vector
+    )  
+  
+    SELECT query_elo7_id, 
+           position_in_vector,
+           value
+    FROM vector_query
+    WHERE value>0
+    """
+    
+    query_to_get_varied_information="""
+    SELECT query_elo7_id,                 
+           price
+    FROM query_elo7;
+    """
+
+    products_dict_validation=merge_query_to_get_words_histograms_and_query_to_get_varied_information_into_dictonaries(path_to_sqlite3,query_to_get_words_histograms,query_to_get_varied_information)
+    return transform_products_load_as_dict_to_dataframeX_variable_to_fit_Y(products_dict_validation, column_to_be_y='price')
+
+
 
 
 def get_data_to_train_and_test_to_use_in_the_model_to_predict_prices(path_to_sqlite3,folder):
@@ -942,6 +985,69 @@ def get_data_to_train_and_test_to_use_in_the_model_to_predict_prices(path_to_sql
             }
 
 
+
+def get_data_to_train_and_test_to_use_in_the_model_to_regress_prices(path_to_sqlite3,folder):
+
+    query_to_get_varied_information="""
+    SELECT query_elo7_id,                 
+           price
+    FROM query_elo7;
+    """
+
+    query_to_get_words_histograms_to_train="""
+    WITH vector_query AS (
+        SELECT query_elo7.query_elo7_id,
+            vector_element.position_in_vector,       
+            SUM(vector_element.value) AS value    
+            FROM vector_element
+        INNER JOIN query_elo7 ON query_elo7.query_elo7_id=vector_element.query_elo7_id
+        WHERE query_elo7.hash_for_query_elo7_id<15 AND query_elo7.hash_for_query_elo7_id  NOT IN ({folder1},{folder2})
+  
+        GROUP BY query_elo7.query_elo7_id,vector_element.position_in_vector
+        ORDER BY query_elo7.query_elo7_id,vector_element.position_in_vector
+    )  
+  
+    SELECT query_elo7_id, 
+           position_in_vector,
+           value
+    FROM vector_query
+    WHERE value>0
+    """.format(folder1=folder*2,folder2=(folder*2)+1)
+    
+    products_dict_train=merge_query_to_get_words_histograms_and_query_to_get_varied_information_into_dictonaries(path_to_sqlite3,query_to_get_words_histograms_to_train,query_to_get_varied_information)
+
+
+
+    query_to_get_words_histograms_to_test="""
+    WITH vector_query AS (
+        SELECT query_elo7.query_elo7_id,
+            vector_element.position_in_vector,       
+            SUM(vector_element.value) AS value    
+            FROM vector_element
+        INNER JOIN query_elo7 ON query_elo7.query_elo7_id=vector_element.query_elo7_id
+        WHERE query_elo7.hash_for_query_elo7_id<15 AND query_elo7.hash_for_query_elo7_id   IN ({folder1},{folder2})
+  
+        GROUP BY query_elo7.query_elo7_id,vector_element.position_in_vector
+        ORDER BY query_elo7.query_elo7_id,vector_element.position_in_vector
+    )  
+  
+    SELECT query_elo7_id, 
+           position_in_vector,
+           value
+    FROM vector_query
+    WHERE value>0
+    """.format(folder1=folder*2,folder2=(folder*2)+1)
+
+    
+    products_dict_test=merge_query_to_get_words_histograms_and_query_to_get_varied_information_into_dictonaries(path_to_sqlite3,query_to_get_words_histograms_to_test,query_to_get_varied_information)
+
+    return  {
+                "train":transform_products_load_as_dict_to_dataframeX_variable_to_fit_Y(products_dict_train, column_to_be_y='price'),
+                "test":transform_products_load_as_dict_to_dataframeX_variable_to_fit_Y(products_dict_test, column_to_be_y='price')
+            }
+
+
+
 def define_better_model_to_predict_price_from_text_in_query(path_to_sqlite,data_validation,dropColumnsFromDataTrainAndTest=[]):
     bestModel=None
     averageAcuracyForBestModel=None
@@ -971,18 +1077,56 @@ def define_better_model_to_predict_price_from_text_in_query(path_to_sqlite,data_
 
     return {'bestModel':bestModel,'averageAcuracy':averageAcuracyForBestModel}
 
+def create_a_list_with_range_of_values_from_list_with_price_group(path_to_sqlite,list_with_price_group):
+    conn=sqlite3.connect(path_to_sqlite)
+    df=pd.read_sql_query("""SELECT  price_group,
+                                MIN(price),
+                                MAX(price)
+                        FROM query_elo7
+                        GROUP BY price_group
+                        ORDER BY MIN(price),MAX(price)
+                        """,conn).values
+    conn.close()
+    conv_group_number_to_range_of_values={}
+    for line in df:
+        conv_group_number_to_range_of_values[line[0]]=("%.2f"%line[1])+"_to_"+("%.2f"%line[2])
+    
+    list_with_range_of_values=[]
+    for x in list_with_price_group:
+        list_with_range_of_values.append(conv_group_number_to_range_of_values[x])
+    return list_with_range_of_values
 
-data_validation=get_data_to_validation_to_use_in_the_model_to_predict_price(path_to_sqlite)
-return_from_defineBetterModel=define_better_model_to_predict_price_from_text_in_query(path_to_sqlite,data_validation)
-model=return_from_defineBetterModel['bestModel']
-ypred=model.predict(data_validation['dataframeX'])
-confusion_mat=create_dataFrame_with_confusion_matrix(data_validation['Y'],ypred)
+def get_ordination_to_show_value_ranges(path_to_sqlite):
+    conn=sqlite3.connect(path_to_sqlite)
+    df=pd.read_sql_query("""SELECT  price_group,
+                                MIN(price),
+                                MAX(price)
+                        FROM query_elo7
+                        GROUP BY price_group
+                        ORDER BY MIN(price),MAX(price)
+                        """,conn).values
+    conn.close()
+    ordination=[]
+    for line in df:
+        ordination.append(("%.2f"%line[1])+"_to_"+("%.2f"%line[2]))
+    return ordination
+    
+#########data_validation=get_data_to_validation_to_use_in_the_model_to_predict_price(path_to_sqlite)
+#########return_from_defineBetterModel=define_better_model_to_predict_price_from_text_in_query(path_to_sqlite,data_validation)
+#########model=return_from_defineBetterModel['bestModel']
+#########ypred=model.predict(data_validation['dataframeX'])
+
+#########data_validation['Y']=create_a_list_with_range_of_values_from_list_with_price_group(path_to_sqlite,data_validation['Y'])
+#########ypred=create_a_list_with_range_of_values_from_list_with_price_group(path_to_sqlite,ypred)
+#########ordination_to_show_value_ranges=get_ordination_to_show_value_ranges(path_to_sqlite)
+#########confusion_mat_2=create_dataFrame_with_confusion_matrix(data_validation['Y'],ypred,labels_arg=ordination_to_show_value_ranges)
 #%% [markdown]
 # A seguir a matriz de confusão é a acuracia média que o modelo conseguiu para diferentes
 # grupos de preço:
 #%%
-display(confusion_mat)
-print("Acurácia media: "+str(return_from_defineBetterModel['averageAcuracy']))
+#########print("Matriz de confusão para classifcar grupos de preço:")
+#########display(confusion_mat_2)
+#########print("Acurácia media: "+str(return_from_defineBetterModel['averageAcuracy']))
 
 #%%[markdown]
 # Como pode ser observado o modelo de predição desenvolvido não apresentou um 
@@ -1046,7 +1190,39 @@ def calculate_histogram_of_words_for_categories(path_to_sqlite3):
 
     return category_vectors
 
-def compute_angle_from_categories_hist_and_distance_from_categories_hist_for_query_hist(query_info,category_vectors):
+
+def calculate_histogram_of_words_for_price_groups(path_to_sqlite3,where_clausule=""):
+    conn = sqlite3.connect(path_to_sqlite3)
+    
+    sql="""
+    
+    WITH vector_products AS (
+        SELECT query_elo7.query_elo7_id,
+            vector_element.position_in_vector,
+            query_elo7.price_group,
+            SUM(vector_element.value) AS value    
+            FROM vector_element
+        INNER JOIN query_elo7 ON query_elo7.query_elo7_id=vector_element.query_elo7_id        
+        {WHERE}
+        GROUP BY query_elo7.query_elo7_id,vector_element.position_in_vector,query_elo7.price_group
+        ORDER BY query_elo7.query_elo7_id,vector_element.position_in_vector,query_elo7.price_group
+    )  
+    
+    SELECT price_group, 
+           position_in_vector,
+           AVG(value) AS value
+    FROM vector_products    
+    GROUP BY price_group,position_in_vector
+    ORDER BY price_group,position_in_vector        
+    """.format(WHERE=where_clausule)
+    df=pd.read_sql_query(sql,conn)
+    price_group_vectors={}
+    for price_group in df['price_group'].unique():
+        price_group_vectors[price_group]=df[df['price_group']==price_group].sort_values(by=['position_in_vector']).values.transpose()[2]
+
+    return price_group_vectors
+
+def compute_angle_from_some_grouping_hist_and_distance_from_small_group_hist_for_query_hist(query_info,category_vectors):
     categories_names=list(category_vectors.keys())
     categories_names.sort()
     correlations=[]
@@ -1058,7 +1234,10 @@ def compute_angle_from_categories_hist_and_distance_from_categories_hist_for_que
 
 
 
-def get_histograms_for_querys(path_to_sqlite3):
+def get_histograms_for_querys(path_to_sqlite3,
+                              where_clausule_for_vector_element="",
+                              where_clausule_for_query_elo7="",
+                              where_for_calculate_histogram_of_words_for_price_groups=""):
     querys_info={}
 
     sql='''
@@ -1066,8 +1245,8 @@ def get_histograms_for_querys(path_to_sqlite3):
             SELECT vector_element.query_elo7_id ,
             vector_element.position_in_vector,
             AVG(vector_element.value) AS value    
-            FROM vector_element       
-  
+            FROM vector_element               
+            {WHERE}
         GROUP BY vector_element.query_elo7_id,vector_element.position_in_vector
         ORDER BY vector_element.query_elo7_id,vector_element.position_in_vector
     )
@@ -1075,9 +1254,9 @@ def get_histograms_for_querys(path_to_sqlite3):
            position_in_vector,
            value
     FROM TEMP1
-    WHERE value>0
+    WHERE value>0    
     ORDER BY query_elo7_id,position_in_vector
-    '''
+    '''.format(WHERE=where_clausule_for_vector_element)
     conn = sqlite3.connect(path_to_sqlite3)
     cur=conn.cursor()
     cur.execute("""
@@ -1088,8 +1267,9 @@ def get_histograms_for_querys(path_to_sqlite3):
                 minimum_quantity,
                 view_counts
       
-        FROM query_elo7;
-    """)
+        FROM query_elo7
+        {WHERE};
+    """.format(WHERE=where_clausule_for_query_elo7))
     
     for row in cur:
         querys_info[row[0]]={'price':row[1],'weigth':row[2],'express_delivery':row[3],'minimum_quantity':row[4],'view_counts':row[5],'histogram':np.zeros(384),'correlation_from_categories':[], 'angle_from_categories':[]}
@@ -1100,30 +1280,55 @@ def get_histograms_for_querys(path_to_sqlite3):
 
     conn.close()
     
-    category_vectors=calculate_histogram_of_words_for_categories(path_to_sqlite3)
+    group_vectors=calculate_histogram_of_words_for_price_groups(path_to_sqlite3,where_for_calculate_histogram_of_words_for_price_groups)
     for query_key in querys_info:
         query_info=querys_info[query_key]
 
         
-        angles_and_correlations_for_query=compute_angle_from_categories_hist_and_distance_from_categories_hist_for_query_hist(query_info,category_vectors)
-        query_info['correlation_from_categories']=angles_and_correlations_for_query['correlations']
-        query_info['angle_from_categories']=angles_and_correlations_for_query['angles']
+        angles_and_correlations_for_query=compute_angle_from_some_grouping_hist_and_distance_from_small_group_hist_for_query_hist(query_info,group_vectors)
+        query_info['correlation_from_price_groups']=angles_and_correlations_for_query['correlations']
+        query_info['angle_from_price_groups']=angles_and_correlations_for_query['angles']
 
     return querys_info
 
+def get_histograms_for_querys_from_validation(path_to_sqlite3, folder_of_train_and_test):
+    folder=folder_of_train_and_test
+    return get_histograms_for_querys(   path_to_sqlite,
+                                        "WHERE vector_element.hash_for_query_elo7_id>=15",
+                                        "WHERE query_elo7.hash_for_query_elo7_id>=15",
+                                        """WHERE vector_element.hash_for_query_elo7_id<15 AND
+                                           vector_element.hash_for_query_elo7_id NOT IN ({folder1},{folder2})""".format(folder1=(folder*2),folder2=((folder*2)+1)))
+        
+def get_histograms_for_querys_for_train_and_test(path_to_sqlite3,folder):
+        train=get_histograms_for_querys(    path_to_sqlite,
+                                            """WHERE vector_element.hash_for_query_elo7_id<15 AND 
+                                                     vector_element.hash_for_query_elo7_id NOT IN ({folder1},{folder2})""".format(folder1=(folder*2),folder2=((folder*2)+1)),
+                                            """WHERE query_elo7.hash_for_query_elo7_id<15 AND
+                                                     query_elo7.hash_for_query_elo7_id NOT IN ({folder1},{folder2})""".format(folder1=(folder*2),folder2=((folder*2)+1)),
+                                            """WHERE vector_element.hash_for_query_elo7_id<15 AND
+                                                     vector_element.hash_for_query_elo7_id NOT IN ({folder1},{folder2})""".format(folder1=(folder*2),folder2=((folder*2)+1)))
+        test=get_histograms_for_querys(    path_to_sqlite,
+                                            """WHERE vector_element.hash_for_query_elo7_id<15 AND 
+                                                     vector_element.hash_for_query_elo7_id IN ({folder1},{folder2})""".format(folder1=(folder*2),folder2=((folder*2)+1)),
+                                            """WHERE query_elo7.hash_for_query_elo7_id<15 AND
+                                                     query_elo7.hash_for_query_elo7_id IN ({folder1},{folder2})""".format(folder1=(folder*2),folder2=((folder*2)+1)),
+                                            """WHERE vector_element.hash_for_query_elo7_id<15 AND
+                                                     vector_element.hash_for_query_elo7_id NOT IN ({folder1},{folder2})""".format(folder1=(folder*2),folder2=((folder*2)+1)))
+        return {"test":test,"train":train}
 
 
 
-def create_dataframe_for_angles_from_categories_and_some_columns_from_table_query_elo7(querys_info):
+
+def create_dataframe_for_angles_from_small_group_and_some_columns_from_table_query_elo7(querys_info, small_group_name='correlation_from_categories'):
     data_frame_in_dict={'price':[],'weigth':[],'express_delivery':[],'minimum_quantity':[]}
-    numberOfCorrelations=len(querys_info[list(querys_info.keys())[0]]['correlation_from_categories'])
+    numberOfCorrelations=len(querys_info[list(querys_info.keys())[0]]['angle_from_'+small_group_name])
     for i in range(numberOfCorrelations):
         data_frame_in_dict['angle_'+str(i)]=[]
 
     for key_query in querys_info:
         query=querys_info[key_query]
-        for i in range(len(query['angle_from_categories'])):
-            angle_from_category=query['angle_from_categories'][i]
+        for i in range(len(query['angle_from_'+small_group_name])):
+            angle_from_category=query['angle_from_'+small_group_name][i]
             data_frame_in_dict['angle_'+str(i)].append(angle_from_category)
         
         data_frame_in_dict['price'].append(query['price'])
@@ -1135,22 +1340,22 @@ def create_dataframe_for_angles_from_categories_and_some_columns_from_table_quer
 
 
 
-querys_info=get_histograms_for_querys(path_to_sqlite)
-df=create_dataframe_for_angles_from_categories_and_some_columns_from_table_query_elo7(querys_info)
-df=df.dropna()
-df['price']=df['price'].apply(np.log)
-x = df.loc[:, [ 'angle_0','angle_1','angle_2','angle_3','angle_4','angle_5']].values
+#########querys_info=get_histograms_for_querys(path_to_sqlite)
+#########df=create_dataframe_for_angles_from_small_group_and_some_columns_from_table_query_elo7(querys_info)
+#########df=df.dropna()
+#########df['price']=df['price'].apply(np.log)
+#########x = df.loc[:, [ 'angle_0','angle_1','angle_2','angle_3','angle_4','angle_5']].values
 
-y = df.loc[:,['price']].values
-x = StandardScaler().fit_transform(x)
-pca = PCA(n_components=2)
-principalComponents = pca.fit_transform(x)
-principalDf = pd.DataFrame(data = principalComponents
-             , columns = ['principal component 1', 'principal component 2'])
+#########y = df.loc[:,['price']].values
+#########x = StandardScaler().fit_transform(x)
+#########pca = PCA(n_components=2)
+#########principalComponents = pca.fit_transform(x)
+#########principalDf = pd.DataFrame(data = principalComponents
+#########             , columns = ['principal component 1', 'principal component 2'])
 
-finalDf = pd.concat([principalDf, df[['price']]], axis = 1)
-sns.scatterplot(data=finalDf, x="principal component 1", y="principal component 2", hue="price")
-plt.show()            
+#########finalDf = pd.concat([principalDf, df[['price']]], axis = 1)
+#########sns.scatterplot(data=finalDf, x="principal component 1", y="principal component 2", hue="price")
+#########plt.show()            
 
 #%% [markdown]
 # Como pode ser observado pelo *plot* acima parece não haver uma separação muito evidente
@@ -1158,3 +1363,98 @@ plt.show()
 
 
 
+#%%[markdown]
+## Avaliação do Sistema de Classificação
+
+# A matriz de confusão foi a principal ferramenta para fazer estas avaliações. <br><br>
+# A seguir a matriz de confusão do obtida no modelo de predição desenvolvido para o *Sistema de Classificação de Produtos*
+#%%
+
+
+#########display(confusion_mat_0)
+#%%[markdown]
+# Plotando um histograma para cada uma das linhas da matriz pode-se ver de forma mais direta que tipos de produtos 
+# foram os mais incorretamente classificados além disso, é possível observar quais são conjuntos de classes que 
+# classificador mais se confude. A seguir o plot dos histograma:
+#%% 
+#########columns=confusion_mat_0.columns
+#########for i in range(len(columns)):
+#########    fig, ax = plt.subplots()
+#########    # the size of A4 paper
+#########    fig.set_size_inches(11.7, 8.27)
+#########    line=confusion_mat_0.iloc[i].values
+#########    df_in_dict={'valor':[],'categoria':[],'classificação correta':[]}
+#########    for j in range(len(columns)):        
+#########        df_in_dict['valor']=df_in_dict['valor']+([1]*int(line[j]))
+#########        df_in_dict['categoria']=df_in_dict['categoria']+([columns[j][1].replace(" ","\n")]*int(line[j]))
+#########        if(i!=j):
+#########            df_in_dict['classificação correta']=df_in_dict['classificação correta']+(["Não"]*int(line[j]))
+#########        else:
+#########            df_in_dict['classificação correta']=df_in_dict['classificação correta']+(["Sim"]*int(line[j]))
+#########    df_plot=pd.DataFrame.from_dict(df_in_dict)        
+#########    sns.histplot(data=df_plot,x="categoria", hue="classificação correta",ax=ax)
+#########    plt.show()
+
+# %% [markdown]
+# Observando-se os histogramas percebe que a categoria *Papel e Cia* é muito confundida com lembrancinhas,
+# possívelmente porque muitas vendedores colocam Posters e Cartões de visita (aniversario, fim de ano e etc)
+# como *Papel e Cia* e não como *Lembrancinhas*. Isso poderia ser comprovado pela analise dos histogramas dos
+# produtos que são *Papel e Cia* mas que foram classificados como *Lembrancinhas*. <br><br>
+# Outra categoria em que o sistema apresenta problemas para classifcar é o *Outros*, isso pode acontecer por 
+# causa da diversidade dos produtos nesta categoria e por existir poucos produtos que pertencem a ela portanto,
+# torna-se dificil para um modelo aprender como o atributos de entrada do modelo se relacionam com ela.
+
+
+#%%[markdown]
+# A seguir a matriz de confusão obtida no modelo de predição desenvolvido para o *Sistema de termos de busca*
+
+#%%
+
+#########conn=sqlite3.connect(path_to_sqlite)
+#########df=pd.read_sql_query("""SELECT  price_group,
+#########                                MIN(price),
+#########                                MAX(price)
+#########                        FROM query_elo7
+#########                        GROUP BY price_group
+#########                        ORDER BY MIN(price),MAX(price)
+#########                        """,conn)
+#########display(df)
+#########display(confusion_mat_2)
+
+#%%[markdown]
+# Analisando a matriz de confusão é possível observar 
+# que em todas pesquisas que resultaram na compra de produtos abaixo de *6,30* 
+# o modelo desenvolvido presume que são pesquisas cuja a intenção 
+# de compra esta entre *6,39* e *16,00*, isso mostra que ele é ruim na predição valores 
+# intenção de intenção de compra abaixo de  *6,30*. <br>
+# Com a análise de acuracia pode-se observar que o modelo desenvolvido
+# não é muito preciso contudo, quando ele erra na predição ele tende a predizer grupos
+# que são próximos do grupo original (isso pode ser observado analisando a matriz de confusão).
+
+
+
+
+
+# %%
+data_validation_regress=get_histograms_for_querys_from_validation(path_to_sqlite,2)
+data_train_test_regress=get_histograms_for_querys_for_train_and_test(path_to_sqlite,2)
+df_train=create_dataframe_for_angles_from_small_group_and_some_columns_from_table_query_elo7(data_train_test_regress['train'],'price_groups')
+df_train=df_train.dropna()
+columnsToUse=['angle_1', 'angle_2', 'angle_3', 'angle_4', 'angle_5', 'angle_6','angle_7']
+
+
+df_train['price']=df_train['price'].apply(np.log)
+y_train=df_train['price']
+df_train[columnsToUse]=df_train[columnsToUse]
+
+df_validation=create_dataframe_for_angles_from_small_group_and_some_columns_from_table_query_elo7(data_validation_regress,'price_groups')
+df_validation=df_validation.dropna()
+
+df_validation['price']=df_validation['price'].apply(np.log)
+y_validation=df_validation['price']
+df_validation[columnsToUse]=df_validation[columnsToUse]
+
+regr = linear_model.LinearRegression()
+regr.fit(df_train, y_train)
+y1 = regr.predict(df_validation) 
+print("hello")
