@@ -829,7 +829,7 @@ def update_column_price_group_with_groups_found_in_kmeans_for_price(path_to_sqli
     conn.close()
 
 
-#########update_column_price_group_with_groups_found_in_kmeans_for_price(path_to_sqlite)
+update_column_price_group_with_groups_found_in_kmeans_for_price(path_to_sqlite)
 #end===========================================================================
 
 
@@ -852,6 +852,7 @@ def update_column_price_group_with_groups_found_in_kmeans_for_price(path_to_sqli
 
 
 #%%[markdown]
+### Modelo para predição da intenção de preço do usuario por arvore de decisão
 # A seguir um modelo que infere a intenção de preço do usuário,
 # assim como o modelo que categoriza produtos ele foi criado via
 #arvore de decisão e utilizando a metodologia K-fold:
@@ -1137,16 +1138,19 @@ def get_ordination_to_show_value_ranges(path_to_sqlite):
 # <ul>
 # <li> 
 #  Calcular o ângulo  entre os histogramas de palavras das consultas
-#  com os histogramas médios de palavras por categoria. Isso iria gerar 5 atributos
-#  númericos para cada consulta e por meio da PCA eles seriam reduzidos para 2 com 
-#  isso, seria possível gerar um *scater plot* e analisar se existe uma separação
+#  com os histogramas médios de palavras por categoria de preço. Isso iria gerar 8 atributos
+#  númericos para cada consulta e por meio da PCA eles seriam reduzidos para 2 para assim,
+#  , ser possível gerar um *scater plot* e analisar se existe uma separação
 #  natural de  *clusters* de intenção de preço.
 #  </li>
 # <li> Aplicar uma transformação logaritma sobre os preços e utilizar algum 
-# algoritmo de regessão (redes neurais ou minímos quadrados) para predizer os
-# os preços.</li>
+# algoritmo de regessão (redes neurais ou minímos quadrados) para criar um
+# modelo de predição de preços. A entrada do modelo seriam os 8 atributos 
+# gerados pela ideia anterior porque, isso diminuiria a dimensionalidade 
+# do problema o que faria o modelo gerado ter mais change de ser preciso.</li>
 # </ul> <br>
-# A seguir a esta código que implementa a primeira ideia:
+# ## Análise de PCA
+# A seguir a esta código que implementa a primeira ideia proposta antes:
 #%%
 #%%
 def unit_vector(vector):
@@ -1220,7 +1224,22 @@ def calculate_histogram_of_words_for_price_groups(path_to_sqlite3,where_clausule
     for price_group in df['price_group'].unique():
         price_group_vectors[price_group]=df[df['price_group']==price_group].sort_values(by=['position_in_vector']).values.transpose()[2]
 
-    return price_group_vectors
+    #code for debug purpose===========================================================================
+    sql=""" 
+        SELECT query_elo7.query_elo7_id,
+            vector_element.position_in_vector,
+            query_elo7.price_group,
+            SUM(vector_element.value) AS value    
+            FROM vector_element
+        INNER JOIN query_elo7 ON query_elo7.query_elo7_id=vector_element.query_elo7_id        
+        {WHERE}
+        GROUP BY query_elo7.query_elo7_id,vector_element.position_in_vector,query_elo7.price_group
+        ORDER BY query_elo7.query_elo7_id,vector_element.position_in_vector,query_elo7.price_group""".format(WHERE=where_clausule)
+    df=pd.read_sql_query(sql,conn)
+    #end==============================================================================================
+    
+    conn.close()
+    return {'price_group_vectors':price_group_vectors,'query_elo7_id_used':df['query_elo7_id'].values}
 
 def compute_angle_from_some_grouping_hist_and_distance_from_small_group_hist_for_query_hist(query_info,category_vectors):
     categories_names=list(category_vectors.keys())
@@ -1272,7 +1291,7 @@ def get_histograms_for_querys(path_to_sqlite3,
     """.format(WHERE=where_clausule_for_query_elo7))
     
     for row in cur:
-        querys_info[row[0]]={'price':row[1],'weigth':row[2],'express_delivery':row[3],'minimum_quantity':row[4],'view_counts':row[5],'histogram':np.zeros(384),'correlation_from_categories':[], 'angle_from_categories':[]}
+        querys_info[row[0]]={'query_elo7_id':row[0],'price':row[1],'weigth':row[2],'express_delivery':row[3],'minimum_quantity':row[4],'view_counts':row[5],'histogram':np.zeros(384),'correlation_from_categories':[], 'angle_from_categories':[]}
     
     cur.execute(sql)
     for row in cur:
@@ -1280,7 +1299,9 @@ def get_histograms_for_querys(path_to_sqlite3,
 
     conn.close()
     
-    group_vectors=calculate_histogram_of_words_for_price_groups(path_to_sqlite3,where_for_calculate_histogram_of_words_for_price_groups)
+    ret_from_calculate_histogram_of_words_for_price_groups=calculate_histogram_of_words_for_price_groups(path_to_sqlite3,where_for_calculate_histogram_of_words_for_price_groups)
+    group_vectors=ret_from_calculate_histogram_of_words_for_price_groups['price_group_vectors']
+    querys_used_for_create_histogram_from_group_of_vectors=ret_from_calculate_histogram_of_words_for_price_groups['query_elo7_id_used']
     for query_key in querys_info:
         query_info=querys_info[query_key]
 
@@ -1289,8 +1310,63 @@ def get_histograms_for_querys(path_to_sqlite3,
         query_info['correlation_from_price_groups']=angles_and_correlations_for_query['correlations']
         query_info['angle_from_price_groups']=angles_and_correlations_for_query['angles']
 
-    return querys_info
+    return {'querys_info':querys_info, 'querys_used_for_create_histgram_of_group_of_vectors':querys_used_for_create_histogram_from_group_of_vectors}
 
+
+
+
+
+def create_dataframe_for_angles_from_small_group_and_some_columns_from_table_query_elo7(querys_info, small_group_name='correlation_from_categories'):
+    data_frame_in_dict={'price':[],'weigth':[],'express_delivery':[],'minimum_quantity':[]}
+    numberOfCorrelations=len(querys_info[list(querys_info.keys())[0]]['angle_from_'+small_group_name])
+    for i in range(numberOfCorrelations):
+        data_frame_in_dict['angle_'+str(i)]=[]
+
+    for key_query in querys_info:
+        query=querys_info[key_query]
+        for i in range(len(query['angle_from_'+small_group_name])):
+            angle_from_category=query['angle_from_'+small_group_name][i]
+            data_frame_in_dict['angle_'+str(i)].append(angle_from_category)
+        
+        data_frame_in_dict['price'].append(query['price'])
+        data_frame_in_dict['weigth'].append(query['weigth'])
+        data_frame_in_dict['express_delivery'].append(query['express_delivery'])
+        data_frame_in_dict['minimum_quantity'].append(query['minimum_quantity'])
+    return pd.DataFrame.from_dict(data_frame_in_dict)
+
+
+
+
+#########querys_info=get_histograms_for_querys(path_to_sqlite)['querys_info']
+#########df=create_dataframe_for_angles_from_small_group_and_some_columns_from_table_query_elo7(querys_info)
+#########df=df.dropna()
+#########df['price']=df['price'].apply(np.log)
+#########x = df.loc[:, [ 'angle_0','angle_1','angle_2','angle_3','angle_4','angle_5']].values
+
+#########y = df.loc[:,['price']].values
+#########x = StandardScaler().fit_transform(x)
+#########pca = PCA(n_components=2)
+#########principalComponents = pca.fit_transform(x)
+#########principalDf = pd.DataFrame(data = principalComponents
+#########             , columns = ['principal component 1', 'principal component 2'])
+
+#########finalDf = pd.concat([principalDf, df[['price']]], axis = 1)
+#########sns.scatterplot(data=finalDf, x="principal component 1", y="principal component 2", hue="price")
+#########plt.show()            
+
+#%% [markdown]
+# Como pode ser observado pelo *plot* acima parece não haver uma separação muito evidente
+# para os diferentes preços sobre as duas primeiras componentes da PCA.
+
+#%%[markdown]
+### Modelo para predição da intenção de preço do usuario por regressão linear
+# A seguir um modelo que infere a intenção de preço do usuário,
+# assim como o modelo que categoriza produtos ele foi criado via
+# arvore de decisão e utilizando a metodologia K-fold porem, como o primeiro fold
+# testado no conjunto de validação já obteve um bom resultado outros folds não foram
+# analisados:
+
+#%%
 def get_histograms_for_querys_from_validation(path_to_sqlite3, folder_of_train_and_test):
     folder=folder_of_train_and_test
     return get_histograms_for_querys(   path_to_sqlite,
@@ -1319,47 +1395,6 @@ def get_histograms_for_querys_for_train_and_test(path_to_sqlite3,folder):
 
 
 
-def create_dataframe_for_angles_from_small_group_and_some_columns_from_table_query_elo7(querys_info, small_group_name='correlation_from_categories'):
-    data_frame_in_dict={'price':[],'weigth':[],'express_delivery':[],'minimum_quantity':[]}
-    numberOfCorrelations=len(querys_info[list(querys_info.keys())[0]]['angle_from_'+small_group_name])
-    for i in range(numberOfCorrelations):
-        data_frame_in_dict['angle_'+str(i)]=[]
-
-    for key_query in querys_info:
-        query=querys_info[key_query]
-        for i in range(len(query['angle_from_'+small_group_name])):
-            angle_from_category=query['angle_from_'+small_group_name][i]
-            data_frame_in_dict['angle_'+str(i)].append(angle_from_category)
-        
-        data_frame_in_dict['price'].append(query['price'])
-        data_frame_in_dict['weigth'].append(query['weigth'])
-        data_frame_in_dict['express_delivery'].append(query['express_delivery'])
-        data_frame_in_dict['minimum_quantity'].append(query['minimum_quantity'])
-    return pd.DataFrame.from_dict(data_frame_in_dict)
-
-
-
-
-#########querys_info=get_histograms_for_querys(path_to_sqlite)
-#########df=create_dataframe_for_angles_from_small_group_and_some_columns_from_table_query_elo7(querys_info)
-#########df=df.dropna()
-#########df['price']=df['price'].apply(np.log)
-#########x = df.loc[:, [ 'angle_0','angle_1','angle_2','angle_3','angle_4','angle_5']].values
-
-#########y = df.loc[:,['price']].values
-#########x = StandardScaler().fit_transform(x)
-#########pca = PCA(n_components=2)
-#########principalComponents = pca.fit_transform(x)
-#########principalDf = pd.DataFrame(data = principalComponents
-#########             , columns = ['principal component 1', 'principal component 2'])
-
-#########finalDf = pd.concat([principalDf, df[['price']]], axis = 1)
-#########sns.scatterplot(data=finalDf, x="principal component 1", y="principal component 2", hue="price")
-#########plt.show()            
-
-#%% [markdown]
-# Como pode ser observado pelo *plot* acima parece não haver uma separação muito evidente
-# para os diferentes preços sobre as duas primeiras componentes da PCA.
 
 
 
@@ -1436,11 +1471,15 @@ def create_dataframe_for_angles_from_small_group_and_some_columns_from_table_que
 
 
 # %%
-data_validation_regress=get_histograms_for_querys_from_validation(path_to_sqlite,2)
-data_train_test_regress=get_histograms_for_querys_for_train_and_test(path_to_sqlite,2)
+ret_from_get_histograms_for_querys_from_validation= get_histograms_for_querys_from_validation(path_to_sqlite,2)
+ret_from_get_histograms_for_querys_for_train_and_test=get_histograms_for_querys_for_train_and_test(path_to_sqlite,2)
+data_validation_regress=ret_from_get_histograms_for_querys_from_validation['querys_info']
+data_train_test_regress={'train':ret_from_get_histograms_for_querys_for_train_and_test['train']['querys_info'],
+                         'test':ret_from_get_histograms_for_querys_for_train_and_test['test']['querys_info']}
+
 df_train=create_dataframe_for_angles_from_small_group_and_some_columns_from_table_query_elo7(data_train_test_regress['train'],'price_groups')
 df_train=df_train.dropna()
-columnsToUse=['angle_1', 'angle_2', 'angle_3', 'angle_4', 'angle_5', 'angle_6','angle_7']
+columnsToUse=['angle_0','angle_1', 'angle_2', 'angle_3', 'angle_4', 'angle_5', 'angle_6','angle_7']
 
 
 df_train['price']=df_train['price'].apply(np.log)
@@ -1458,3 +1497,35 @@ regr = linear_model.LinearRegression()
 regr.fit(df_train, y_train)
 y1 = regr.predict(df_validation) 
 print("hello")
+ #code for debug purpose===========================================================================
+id_of_querys_used_to_validation_model=np.array(list(ret_from_get_histograms_for_querys_from_validation['querys_info'].keys()),dtype=np.int64)
+id_of_querys_used_to_create_vectors_models=np.array(ret_from_get_histograms_for_querys_from_validation['querys_used_for_create_histgram_of_group_of_vectors'],dtype=np.int64)
+id_of_querys_used_to_train=np.array(list(data_train_test_regress['train'].keys()),dtype=np.int64)
+id_of_querys_used_to_create_vectors_models_copy=np.array(ret_from_get_histograms_for_querys_for_train_and_test['train']['querys_used_for_create_histgram_of_group_of_vectors'],dtype=np.int64)
+
+for id0 in id_of_querys_used_to_validation_model:
+    if(id0 in id_of_querys_used_to_create_vectors_models):
+        print('error1')
+        exit(0)
+
+for id0 in id_of_querys_used_to_create_vectors_models:
+    if(id0 in id_of_querys_used_to_validation_model):
+        print('error2')
+        exit(0)
+
+for id0 in id_of_querys_used_to_create_vectors_models:
+    if(not (id0 in id_of_querys_used_to_train)):
+        print('error3')
+        exit(0)
+
+for id0 in id_of_querys_used_to_train :
+    if(not (id0 in id_of_querys_used_to_create_vectors_models)):
+        print('error4')
+        exit(0)
+
+for id0 in id_of_querys_used_to_create_vectors_models_copy :
+    if( id0 in id_of_querys_used_to_validation_model):
+        print('error5')
+        exit(0)
+print("finished")
+#end==============================================================================================
