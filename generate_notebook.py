@@ -776,9 +776,9 @@ def create_dataFrame_with_confusion_matrix(real,pred, labels_arg=None):
 # Para criar este sistema foi primeiro pensado na ideia de criar grupos de preço e 
 # a partir destes grupos utilizar um algoritmo de  aprendizado de maquina que 
 # encontre uma relação entre os histogramas de palavras das consultas
-# com um determinado grupo de preço. É importante observar  que o preço
-# utilizado não foi o bruto mas sim o preço bruto multiplicado pela quantidade minima do produto, 
-# no caso da quantidade mínima ser zero ou não exister se assume que ela é igual a 1. <br> <br>
+# com um determinado grupo de preço, descobrindo assim a intenção do usuário 
+# de comprar produtos de um terminado preço com base naquilo que digita em suas
+# consultas. 
 # Para a criação dos grupo de preço foi  utilizado o algoritmo K-médias.  A seguir
 # o código que divide os preços em grupos:
 
@@ -829,7 +829,7 @@ def update_column_price_group_with_groups_found_in_kmeans_for_price(path_to_sqli
     conn.close()
 
 
-update_column_price_group_with_groups_found_in_kmeans_for_price(path_to_sqlite)
+#update_column_price_group_with_groups_found_in_kmeans_for_price(path_to_sqlite)
 #end===========================================================================
 
 
@@ -852,10 +852,10 @@ update_column_price_group_with_groups_found_in_kmeans_for_price(path_to_sqlite)
 
 
 #%%[markdown]
-### Modelo para predição da intenção de preço do usuario por arvore de decisão
+### Modelo para predição da intenção de preço do usuario por árvore de decisão
 # A seguir um modelo que infere a intenção de preço do usuário,
 # assim como o modelo que categoriza produtos ele foi criado via
-#arvore de decisão e utilizando a metodologia K-fold:
+#árvore de decisão e utilizando a metodologia K-fold:
 
 
 #%%
@@ -1362,7 +1362,7 @@ def create_dataframe_for_angles_from_small_group_and_some_columns_from_table_que
 ### Modelo para predição da intenção de preço do usuario por regressão linear
 # A seguir um modelo que infere a intenção de preço do usuário,
 # assim como o modelo que categoriza produtos ele foi criado via
-# arvore de decisão e utilizando a metodologia K-fold porem, como o primeiro fold
+# árvore de decisão e utilizando a metodologia K-fold contudo, como o primeiro fold
 # testado no conjunto de validação já obteve um bom resultado outros folds não foram
 # analisados:
 
@@ -1395,13 +1395,76 @@ def get_histograms_for_querys_for_train_and_test(path_to_sqlite3,folder):
 
 
 
+#%%
+ret_from_get_histograms_for_querys_from_validation= get_histograms_for_querys_from_validation(path_to_sqlite,2)
+ret_from_get_histograms_for_querys_for_train_and_test=get_histograms_for_querys_for_train_and_test(path_to_sqlite,2)
+data_validation_regress=ret_from_get_histograms_for_querys_from_validation['querys_info']
+data_train_test_regress={'train':ret_from_get_histograms_for_querys_for_train_and_test['train']['querys_info'],
+                         'test':ret_from_get_histograms_for_querys_for_train_and_test['test']['querys_info']}
+
+df_train=create_dataframe_for_angles_from_small_group_and_some_columns_from_table_query_elo7(data_train_test_regress['train'],'price_groups')
+df_train=df_train.dropna()
+columnsToUse=['angle_0','angle_1', 'angle_2', 'angle_3', 'angle_4', 'angle_5', 'angle_6','angle_7']
+
+
+df_train['price']=df_train['price'].apply(np.log)
+y_train=df_train['price']
+df_train[columnsToUse]=df_train[columnsToUse]
+
+df_validation=create_dataframe_for_angles_from_small_group_and_some_columns_from_table_query_elo7(data_validation_regress,'price_groups')
+df_validation=df_validation.dropna()
+
+df_validation['price']=df_validation['price'].apply(np.log)
+values_from_validation_dataset_for_regression_model=df_validation['price']
+df_validation[columnsToUse]=df_validation[columnsToUse]
+
+regression_model_for_price = linear_model.LinearRegression()
+regression_model_for_price.fit(df_train, y_train)
+predicted_values_for_validation_dataset_for_regression_model = regression_model_for_price.predict(df_validation) 
+
+#%%[markdown]
+# Por causa do bom resultado obtido foi analisado se existia 
+# contaminação de dados entre os conjuntos de dados utilizados
+# para treinar e validar o modelo, caso deseje repetir esta analise
+# defina como *True* a variável abaixo:
+#%%
+checkIfExistsContaminationInDataUsedToCreateModelAndDataUsedToValidationModel=False
+#%%
+#code for debug purpose===========================================================================
+if(checkIfExistsContaminationInDataUsedToCreateModelAndDataUsedToValidationModel):
+    id_of_querys_used_to_validation_model=np.array(list(ret_from_get_histograms_for_querys_from_validation['querys_info'].keys()),dtype=np.int64)
+    id_of_querys_used_to_create_vectors_models=np.array(ret_from_get_histograms_for_querys_from_validation['querys_used_for_create_histgram_of_group_of_vectors'],dtype=np.int64)
+    id_of_querys_used_to_train=np.array(list(data_train_test_regress['train'].keys()),dtype=np.int64)
+    id_of_querys_used_to_create_vectors_models_copy=np.array(ret_from_get_histograms_for_querys_for_train_and_test['train']['querys_used_for_create_histgram_of_group_of_vectors'],dtype=np.int64)
+
+    for id0 in id_of_querys_used_to_validation_model:
+        if(id0 in id_of_querys_used_to_create_vectors_models):
+            print('Contamination for first step of checking')
+            break
+
+
+
+    for id0 in id_of_querys_used_to_create_vectors_models:
+        if(not (id0 in id_of_querys_used_to_train)):
+            print('Contamination for second step of checking')
+            break
+
+
+
+    for id0 in id_of_querys_used_to_create_vectors_models_copy :
+        if( id0 in id_of_querys_used_to_validation_model):
+            print('Contamination for third step of checking')
+            break
+    print("Check finished")
+#end==============================================================================================
+
 
 
 
 #%%[markdown]
 ## Avaliação do Sistema de Classificação
-
-# A matriz de confusão foi a principal ferramenta para fazer estas avaliações. <br><br>
+### Sistema de Classificação de Produtos
+# A matriz de confusão foi a principal ferramenta para fazer esta avaliação. <br><br>
 # A seguir a matriz de confusão do obtida no modelo de predição desenvolvido para o *Sistema de Classificação de Produtos*
 #%%
 
@@ -1410,7 +1473,7 @@ def get_histograms_for_querys_for_train_and_test(path_to_sqlite3,folder):
 #%%[markdown]
 # Plotando um histograma para cada uma das linhas da matriz pode-se ver de forma mais direta que tipos de produtos 
 # foram os mais incorretamente classificados além disso, é possível observar quais são conjuntos de classes que 
-# classificador mais se confude. A seguir o plot dos histograma:
+# classificador mais se confude. A seguir o plot dos histogramas:
 #%% 
 #########columns=confusion_mat_0.columns
 #########for i in range(len(columns)):
@@ -1441,7 +1504,19 @@ def get_histograms_for_querys_for_train_and_test(path_to_sqlite3,folder):
 
 
 #%%[markdown]
-# A seguir a matriz de confusão obtida no modelo de predição desenvolvido para o *Sistema de termos de busca*
+### Sistema de termos de busca 
+# Esta seção aborda os sistemas predição desenvolvido para a intenção compra de produtos de uma determinada faixa de
+# preço com base naquilo que o usuário digita na consulta. Dois caminhos foram explorados para a criação desta tarefa:
+# <ul>
+#   <li>Utilizando árvore de decisão para predizer a intenção de compra do produto, com a predição sendo realizada sobre grupos/classes de preço. 
+#       Com a entrada do modelo sendo o histograma de palavras que o usuário digita na consulta.</li>
+#   <li>Utilizando regressão linear por mínimos quadrados para predizer a intenção de compra do produto, com a predição sendo realizada sobre a variável preço transformada em escala logarítmica. 
+#       Com a entrada do modelo sendo o angulo do entre os histogramas médios por grupo de preço com o histograma de palavras que o usuário digita na consulta.</li>
+# </ul>
+# da intenção de 
+#### Predição utilizando árvore de decisão para predizer a intenção de compra do produto
+# A matriz de confusão foi a principal ferramenta para fazer esta avaliação. <br><br>
+# A seguir a matriz de confusão obtida no modelo de predição desenvolvido:
 
 #%%
 
@@ -1466,66 +1541,33 @@ def get_histograms_for_querys_for_train_and_test(path_to_sqlite3,folder):
 # não é muito preciso contudo, quando ele erra na predição ele tende a predizer grupos
 # que são próximos do grupo original (isso pode ser observado analisando a matriz de confusão).
 
+#### Predição utilizando regressão linear por mínimos quadrados para predizer a intenção de compra do produto
+# Como este modelo trabalha com regressão então foram utilizadas as seguintes métricas para medir sua qualidade:
+# <ul>
+# <li> O total de diferença entre os valores reais versus o valores preditos. </li>
+# <li> O media da diferença entre os valores reais versus o valores preditos. </li>
+# <li> O desvio padrão da diferença entre os valores reais versus o valores preditos. </li>
+# <li> O plot de um Boxplot para as diferenças entre os valores reais versus o valores preditos. </li>
+# </ul>
+
+#%%
+total_difference_for_prices_predicted_and_real=sum(abs(np.exp(predicted_values_for_validation_dataset_for_regression_model)-np.exp(values_from_validation_dataset_for_regression_model)))
+avg_difference_for_price_predicted_and_real=np.average(abs(np.exp(predicted_values_for_validation_dataset_for_regression_model)-np.exp(values_from_validation_dataset_for_regression_model)))
+std_difference_for_price_predicted_and_real=np.std(abs(np.exp(predicted_values_for_validation_dataset_for_regression_model)-np.exp(values_from_validation_dataset_for_regression_model)))
+array_of_differences_for_prices_predicted_and_real=abs(np.exp(predicted_values_for_validation_dataset_for_regression_model)-np.exp(values_from_validation_dataset_for_regression_model))
+
+print("Diferença total de real versus o predito: "+str(total_difference_for_prices_predicted_and_real))
+print("Diferença média de real versus o predito: "+str(avg_difference_for_price_predicted_and_real))
+print("Desvio padrão para média de real versus o predito: "+str(avg_difference_for_price_predicted_and_real))
+print("BoxPlot da diferença para real versus predito:")
+sns.boxplot(x=(array_of_differences_for_prices_predicted_and_real),showfliers = False)
 
 
 
 
-# %%
-ret_from_get_histograms_for_querys_from_validation= get_histograms_for_querys_from_validation(path_to_sqlite,2)
-ret_from_get_histograms_for_querys_for_train_and_test=get_histograms_for_querys_for_train_and_test(path_to_sqlite,2)
-data_validation_regress=ret_from_get_histograms_for_querys_from_validation['querys_info']
-data_train_test_regress={'train':ret_from_get_histograms_for_querys_for_train_and_test['train']['querys_info'],
-                         'test':ret_from_get_histograms_for_querys_for_train_and_test['test']['querys_info']}
-
-df_train=create_dataframe_for_angles_from_small_group_and_some_columns_from_table_query_elo7(data_train_test_regress['train'],'price_groups')
-df_train=df_train.dropna()
-columnsToUse=['angle_0','angle_1', 'angle_2', 'angle_3', 'angle_4', 'angle_5', 'angle_6','angle_7']
 
 
-df_train['price']=df_train['price'].apply(np.log)
-y_train=df_train['price']
-df_train[columnsToUse]=df_train[columnsToUse]
+# %%[markdown]
+# Conforme pode ser observado este modelo apresenta um otima qualidade de predição.
 
-df_validation=create_dataframe_for_angles_from_small_group_and_some_columns_from_table_query_elo7(data_validation_regress,'price_groups')
-df_validation=df_validation.dropna()
 
-df_validation['price']=df_validation['price'].apply(np.log)
-y_validation=df_validation['price']
-df_validation[columnsToUse]=df_validation[columnsToUse]
-
-regr = linear_model.LinearRegression()
-regr.fit(df_train, y_train)
-y1 = regr.predict(df_validation) 
-print("hello")
- #code for debug purpose===========================================================================
-id_of_querys_used_to_validation_model=np.array(list(ret_from_get_histograms_for_querys_from_validation['querys_info'].keys()),dtype=np.int64)
-id_of_querys_used_to_create_vectors_models=np.array(ret_from_get_histograms_for_querys_from_validation['querys_used_for_create_histgram_of_group_of_vectors'],dtype=np.int64)
-id_of_querys_used_to_train=np.array(list(data_train_test_regress['train'].keys()),dtype=np.int64)
-id_of_querys_used_to_create_vectors_models_copy=np.array(ret_from_get_histograms_for_querys_for_train_and_test['train']['querys_used_for_create_histgram_of_group_of_vectors'],dtype=np.int64)
-
-for id0 in id_of_querys_used_to_validation_model:
-    if(id0 in id_of_querys_used_to_create_vectors_models):
-        print('error1')
-        exit(0)
-
-for id0 in id_of_querys_used_to_create_vectors_models:
-    if(id0 in id_of_querys_used_to_validation_model):
-        print('error2')
-        exit(0)
-
-for id0 in id_of_querys_used_to_create_vectors_models:
-    if(not (id0 in id_of_querys_used_to_train)):
-        print('error3')
-        exit(0)
-
-for id0 in id_of_querys_used_to_train :
-    if(not (id0 in id_of_querys_used_to_create_vectors_models)):
-        print('error4')
-        exit(0)
-
-for id0 in id_of_querys_used_to_create_vectors_models_copy :
-    if( id0 in id_of_querys_used_to_validation_model):
-        print('error5')
-        exit(0)
-print("finished")
-#end==============================================================================================
