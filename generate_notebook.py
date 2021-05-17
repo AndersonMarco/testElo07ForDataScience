@@ -33,6 +33,7 @@ from sklearn.cluster import KMeans
 from sklearn.metrics import silhouette_samples, silhouette_score
 from IPython.display import display
 from sklearn import linear_model
+import pickle
 
 #########nltk.download('punkt')
 #########nltk.download('stopwords')
@@ -769,6 +770,9 @@ def create_dataFrame_with_confusion_matrix(real,pred, labels_arg=None):
 
 #########print("Acurácia media: "+str(return_from_defineBetterModel['averageAcuracy']))
 
+#########model_predict_category_fp=open( "data/models/predict_category/mode.pickle", "wb" )
+#########pickle.dump( model, model_predict_category_fp)
+#########model_predict_category_fp.close()
 
 #%%[markdown]
 ## Sistema de termos de busca
@@ -834,7 +838,7 @@ def update_column_price_group_with_groups_found_in_kmeans_for_price(path_to_sqli
 
 
 #%%[markdown]
-#Como pode ser observado  a divisão da variável price em treze grupos apresenta um bom resultado 
+#Como pode ser observado  a divisão da variável price em oito grupos apresenta um bom resultado 
 #para o metódo da silueta. A seguir um dataframe com os valores mínimo e máximo que cada um dos 13
 #grupos da variável price apresenta:
 
@@ -1310,7 +1314,7 @@ def get_histograms_for_querys(path_to_sqlite3,
         query_info['correlation_from_price_groups']=angles_and_correlations_for_query['correlations']
         query_info['angle_from_price_groups']=angles_and_correlations_for_query['angles']
 
-    return {'querys_info':querys_info, 'querys_used_for_create_histgram_of_group_of_vectors':querys_used_for_create_histogram_from_group_of_vectors}
+    return {'querys_info':querys_info, 'querys_used_for_create_histgram_of_group_of_vectors':querys_used_for_create_histogram_from_group_of_vectors,'group_vectors':group_vectors}
 
 
 
@@ -1421,6 +1425,15 @@ df_validation[columnsToUse]=df_validation[columnsToUse]
 regression_model_for_price = linear_model.LinearRegression()
 regression_model_for_price.fit(df_train, y_train)
 predicted_values_for_validation_dataset_for_regression_model = regression_model_for_price.predict(df_validation) 
+group_vectors_fp=open( "data/models/predict_price/group_vectors.pickle", "wb" )
+pickle.dump( list(ret_from_get_histograms_for_querys_from_validation['group_vectors']), group_vectors_fp)
+group_vectors_fp.close()
+
+
+model_predict_price_fp=open( "data/models/predict_price/mode.pickle", "wb" )
+pickle.dump( regression_model_for_price, model_predict_price_fp)
+model_predict_price_fp.close()
+
 
 #%%[markdown]
 # Por causa do bom resultado obtido foi analisado se existia 
@@ -1569,5 +1582,17 @@ sns.boxplot(x=(array_of_differences_for_prices_predicted_and_real),showfliers = 
 
 # %%[markdown]
 # Conforme pode ser observado este modelo apresenta um otima qualidade de predição.
+
+#%%[markdown]
+# #Colaboração entre os sistemas
+# Para esta etapa foi elaborado um sistema que busca onde o usuário digita algo o sistema criado em
+# *Sistema de Classificação de Produtos* infere a que categoria pertence a consulta e o sistema de
+# criado em *Sistema de termos de busca* acha produtos para a faixa de preço predita 
+# e que foram filtrados para categoria inferida. <br> <br>
+# O sistema *Sistema de termos de busca* foi feito desde o inicio utilizando apenas os termos de busca 
+# das consultas, logo não precisa de modificações. Conforme análises sugerem o sistema criado em
+# *Sistema de termos de busca* pode classificar produtos apenas utilizando os termos de busca digitados
+# pelo usuário sem perda na acurácia.
+#%%
 
 
