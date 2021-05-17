@@ -293,7 +293,7 @@ def count_number_of_times_that_word_appear_in_query(path_to_sqlite3):
 # palavras de um determinado grupo. Para simplificar a escrita vai ser 
 # utilizado o termo *cobertura* neste relatorio tem a seguinte
 # definição: "Um grupo de palavras cobre um consulta se e somente se existe 
-# pelo menos uma palavra do grupo que é esta dentro da consulta".<br> <br>
+# pelo menos uma palavra do grupo que esta dentro da consulta".<br> <br>
 # A seguir um plot que mostra quantas consultas são cobertas por grupos com 
 # as N palavras mais frequentes:
 
@@ -1116,8 +1116,8 @@ def get_ordination_to_show_value_ranges(path_to_sqlite):
         ordination.append(("%.2f"%line[1])+"_to_"+("%.2f"%line[2]))
     return ordination
     
-#########data_validation=get_data_to_validation_to_use_in_the_model_to_predict_price(path_to_sqlite)
-#########return_from_defineBetterModel=define_better_model_to_predict_price_from_text_in_query(path_to_sqlite,data_validation)
+data_validation=get_data_to_validation_to_use_in_the_model_to_predict_price(path_to_sqlite)
+return_from_defineBetterModel=define_better_model_to_predict_price_from_text_in_query(path_to_sqlite,data_validation)
 #########model=return_from_defineBetterModel['bestModel']
 #########ypred=model.predict(data_validation['dataframeX'])
 
@@ -1342,7 +1342,7 @@ def create_dataframe_for_angles_from_small_group_and_some_columns_from_table_que
 
 
 #########querys_info=get_histograms_for_querys(path_to_sqlite)['querys_info']
-#########df=create_dataframe_for_angles_from_small_group_and_some_columns_from_table_query_elo7(querys_info)
+#########df=create_dataframe_for_angles_from_small_group_and_some_columns_from_table_query_elo7(querys_info,'price_groups')
 #########df=df.dropna()
 #########df['price']=df['price'].apply(np.log)
 #########x = df.loc[:, [ 'angle_0','angle_1','angle_2','angle_3','angle_4','angle_5']].values
